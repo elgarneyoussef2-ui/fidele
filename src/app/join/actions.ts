@@ -12,17 +12,17 @@ export async function processJoinAndCredit(input: {
   const supabase = await createAdminClient()
 
   try {
-    // 1. Chercher ou créer le client
-    const { data: client, error: clientError } = await (supabase.from('clients') as any)
+    // 1. Chercher le client existant
+    const { data: existingClient } = await (supabase.from('clients') as any)
       .select('*')
       .eq('phone', phone)
       .eq('restaurant_id', restaurantId)
-      .single()
+      .maybeSingle()
 
-    let currentClient = client
+    let currentClient = existingClient
 
-    if (clientError || !client) {
-      // Créer nouveau client
+    if (!existingClient) {
+      // Créer nouveau client si n'existe pas
       const { data: newClient, error: createError } = await (supabase.from('clients') as any)
         .insert({
           restaurant_id: restaurantId,
@@ -34,16 +34,21 @@ export async function processJoinAndCredit(input: {
         })
         .select()
         .single()
-      
+
       if (createError) throw createError
       currentClient = newClient
     }
 
     // 2. Calculer les points (10 points pour 100 MAD par défaut)
-    const pointsToEarn = Math.floor(amount / 10)
-    const updatedBalance = (currentClient.points_balance || 0) + pointsToEarn
+    const pointsToEarn = Math.max(0, Math.floor(amount / 10))
+    if (pointsToEarn === 0 && amount > 0) {
+      // Optionnel : donner au moins 1 point si le montant est petit mais > 0
+    }
 
-    // 3. Enregistrer la visite
+    const oldBalance = Number(currentClient.points_balance) || 0
+    const updatedBalance = oldBalance + pointsToEarn
+
+    // 3. Enregistrer la visite (permet plusieurs visites avec le même lien)
     const { error: visitError } = await (supabase.from('visits') as any).insert({
       client_id: currentClient.id,
       restaurant_id: restaurantId,
@@ -57,7 +62,7 @@ export async function processJoinAndCredit(input: {
     const { error: updateError } = await (supabase.from('clients') as any)
       .update({
         points_balance: updatedBalance,
-        total_visits: (currentClient.total_visits || 0) + 1,
+        total_visits: (Number(currentClient.total_visits) || 0) + 1,
         total_spent: (Number(currentClient.total_spent) || 0) + amount,
         last_visit_at: new Date().toISOString()
       })
@@ -65,11 +70,11 @@ export async function processJoinAndCredit(input: {
 
     if (updateError) throw updateError
 
-    return { 
-      success: true, 
-      pointsEarned: pointsToEarn, 
+    return {
+      success: true,
+      pointsEarned: pointsToEarn,
       newBalance: updatedBalance,
-      name: currentClient.name 
+      name: currentClient.name
     }
   } catch (error: any) {
     console.error('Erreur Action processJoinAndCredit:', error)
@@ -79,14 +84,14 @@ export async function processJoinAndCredit(input: {
 
 export async function checkExistingClient(phone: string, restaurantId: string) {
   const supabase = await createAdminClient()
-  
+
   try {
     const { data: client } = await (supabase.from('clients') as any)
       .select('*')
       .eq('phone', phone)
       .eq('restaurant_id', restaurantId)
       .single()
-    
+
     return { client }
   } catch (error) {
     return { client: null }
