@@ -99,8 +99,8 @@ export async function creditPoints(input: CreditPointsInput): Promise<{
   }
 
   // Mettre à jour le solde client
-  const { error: updateError } = await supabase
-    .from('clients')
+  const { error: updateError } = await (supabase
+    .from('clients') as any)
     .update({
       points_balance: newBalance,
       total_visits: newVisits,
