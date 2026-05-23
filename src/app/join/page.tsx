@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import { CheckCircle2, Loader2, Star, Smartphone } from 'lucide-react'
+import { CheckCircle2, Loader2, Star, Smartphone, User, ArrowRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 
@@ -19,10 +19,12 @@ function JoinContent() {
   const amount = searchParams.get('amount')
   
   const [loading, setLoading] = useState(false)
-  const [completed, setCompleted] = useState(false)
+  const [step, setStep] = useState<'phone' | 'name' | 'success'>('phone')
   const [phone, setPhone] = useState('')
   const [name, setName] = useState('')
   const [restaurantName, setRestaurantName] = useState('votre restaurant')
+  const [pointsEarned, setPointsEarned] = useState(0)
+  const [newBalance, setNewBalance] = useState(0)
 
   useEffect(() => {
     async function fetchRestaurant() {
@@ -38,82 +40,57 @@ function JoinContent() {
     fetchRestaurant()
   }, [restaurantId, supabase])
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleCheckPhone = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!phone || !name) {
-      toast({
-        title: "Champs requis",
-        description: "Veuillez entrer votre nom et votre numéro de téléphone.",
-        variant: "destructive"
-      })
-      return
-    }
+    if (!phone) return
 
     setLoading(true)
     try {
-      // 1. Chercher ou créer le client
-      const { data: client, error: clientError } = await (supabase.from('clients') as any)
+      const { data: client, error } = await (supabase.from('clients') as any)
         .select('*')
         .eq('phone', phone)
         .eq('restaurant_id', restaurantId)
         .single()
 
-      let currentClient = client
-
-      if (clientError || !client) {
-        // Créer nouveau client
-        const { data: newClient, error: createError } = await (supabase.from('clients') as any)
-          .insert({
-            restaurant_id: restaurantId,
-            name: name,
-            phone: phone,
-            points_balance: 0,
-            total_visits: 0,
-            total_spent: 0
-          })
-          .select()
-          .single()
-        
-        if (createError) throw createError
-        currentClient = newClient
+      if (client) {
+        // Client existe, on crédite directement
+        setName(client.name)
+        await processCredit(client)
+      } else {
+        // Nouveau client, on demande le nom
+        setStep('name')
       }
+    } catch (error) {
+      setStep('name')
+    } finally {
+      setLoading(false)
+    }
+  }
 
-      // 2. Calculer les points (10 points pour 100 MAD par défaut)
-      const pointsToEarn = Math.floor(Number(amount) / 10)
+  const handleRegisterAndCredit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!name) return
 
-      // 3. Enregistrer la visite
-      const { error: visitError } = await (supabase.from('visits') as any)
+    setLoading(true)
+    try {
+      const { data: newClient, error: createError } = await (supabase.from('clients') as any)
         .insert({
-          client_id: currentClient.id,
           restaurant_id: restaurantId,
-          amount_paid: Number(amount),
-          points_earned: pointsToEarn
+          name: name,
+          phone: phone,
+          points_balance: 0,
+          total_visits: 0,
+          total_spent: 0
         })
-
-      if (visitError) throw visitError
-
-      // 4. Mettre à jour le solde du client
-      const { error: updateError } = await (supabase.from('clients') as any)
-        .update({
-          points_balance: currentClient.points_balance + pointsToEarn,
-          total_visits: currentClient.total_visits + 1,
-          total_spent: currentClient.total_spent + Number(amount),
-          last_visit_at: new Date().toISOString()
-        })
-        .eq('id', currentClient.id)
-
-      if (updateError) throw updateError
-
-      setCompleted(true)
-      toast({
-        title: "Succès !",
-        description: `Vous avez gagné ${pointsToEarn} points chez ${restaurantName}.`,
-      })
+        .select()
+        .single()
+      
+      if (createError) throw createError
+      await processCredit(newClient)
     } catch (error: any) {
-      console.error(error)
       toast({
         title: "Erreur",
-        description: "Impossible de créditer vos points. Veuillez réessayer.",
+        description: "Impossible de créer votre compte.",
         variant: "destructive"
       })
     } finally {
@@ -121,7 +98,43 @@ function JoinContent() {
     }
   }
 
-  if (completed) {
+  const processCredit = async (client: any) => {
+    const earned = Math.floor(Number(amount) / 10)
+    const updatedBalance = client.points_balance + earned
+
+    try {
+      // 1. Enregistrer la visite
+      await (supabase.from('visits') as any).insert({
+        client_id: client.id,
+        restaurant_id: restaurantId,
+        amount_paid: Number(amount),
+        points_earned: earned
+      })
+
+      // 2. Mettre à jour le solde
+      await (supabase.from('clients') as any)
+        .update({
+          points_balance: updatedBalance,
+          total_visits: client.total_visits + 1,
+          total_spent: client.total_spent + Number(amount),
+          last_visit_at: new Date().toISOString()
+        })
+        .eq('id', client.id)
+
+      setPointsEarned(earned)
+      setNewBalance(updatedBalance)
+      setStep('success')
+      
+      toast({
+        title: "Succès !",
+        description: `+${earned} points crédités !`,
+      })
+    } catch (error) {
+      throw error
+    }
+  }
+
+  if (step === 'success') {
     return (
       <Card className="border-none shadow-none text-center space-y-6 py-8">
         <div className="flex justify-center">
@@ -130,21 +143,22 @@ function JoinContent() {
           </div>
         </div>
         <CardHeader>
-          <CardTitle className="text-2xl">Félicitations {name} !</CardTitle>
+          <CardTitle className="text-2xl">Ravi de vous revoir, {name} !</CardTitle>
           <CardDescription className="text-lg">
-            Vos points ont été crédités avec succès.
+            Vos points ont été ajoutés.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <div className="bg-primary/5 p-6 rounded-2xl border border-primary/10">
-            <p className="text-sm text-gray-500 mb-1">Points gagnés aujourd'hui</p>
-            <p className="text-4xl font-black text-primary">+{Math.floor(Number(amount) / 10)}</p>
+            <p className="text-sm text-gray-500 mb-1">Points gagnés</p>
+            <p className="text-4xl font-black text-primary">+{pointsEarned}</p>
+          </div>
+          <div className="pt-4">
+            <p className="text-sm text-gray-500">Votre nouveau solde</p>
+            <p className="text-2xl font-bold text-gray-800">{newBalance} points</p>
           </div>
         </CardContent>
-        <CardFooter className="flex flex-col space-y-4">
-          <p className="text-sm text-gray-500">
-            Vous recevrez bientôt une confirmation par WhatsApp.
-          </p>
+        <CardFooter>
           <Button variant="outline" className="w-full" onClick={() => window.location.reload()}>
             Fermer
           </Button>
@@ -161,50 +175,65 @@ function JoinContent() {
             <Star size={32} fill="currentColor" />
           </div>
         </div>
-        <CardTitle className="text-2xl">Bienvenue chez {restaurantName}</CardTitle>
+        <CardTitle className="text-2xl">Points Fidélité</CardTitle>
         <CardDescription>
-          Entrez vos informations pour récupérer vos points de fidélité pour votre achat de {amount} MAD.
+          {step === 'phone' 
+            ? "Entrez votre numéro pour récupérer vos points." 
+            : `Bienvenue ! Quel est votre nom pour votre compte chez ${restaurantName} ?`}
         </CardDescription>
       </CardHeader>
+      
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Votre Nom</Label>
-            <Input 
-              id="name" 
-              placeholder="Ex: Ahmed Alami" 
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              disabled={loading}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="phone">Numéro WhatsApp</Label>
-            <div className="relative">
-              <Smartphone className="absolute left-3 top-3 text-gray-400" size={18} />
-              <Input 
-                id="phone" 
-                className="pl-10" 
-                placeholder="0612345678" 
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                required
-                disabled={loading}
-              />
+        {step === 'phone' ? (
+          <form onSubmit={handleCheckPhone} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="phone">Numéro de téléphone</Label>
+              <div className="relative">
+                <Smartphone className="absolute left-3 top-3 text-gray-400" size={18} />
+                <Input 
+                  id="phone" 
+                  className="pl-10 h-12 text-lg" 
+                  placeholder="0612345678" 
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  required
+                  disabled={loading}
+                />
+              </div>
             </div>
-          </div>
-          <Button type="submit" className="w-full h-12 text-lg font-bold" disabled={loading}>
-            {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Récupérer mes points"}
-          </Button>
-        </form>
+            <Button type="submit" className="w-full h-12 text-lg font-bold" disabled={loading}>
+              {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : (
+                <>Continuer <ArrowRight className="ml-2 h-5 w-5" /></>
+              )}
+            </Button>
+          </form>
+        ) : (
+          <form onSubmit={handleRegisterAndCredit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Votre Nom complet</Label>
+              <div className="relative">
+                <User className="absolute left-3 top-3 text-gray-400" size={18} />
+                <Input 
+                  id="name" 
+                  className="pl-10 h-12 text-lg" 
+                  placeholder="Ex: Ahmed Alami" 
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  disabled={loading}
+                />
+              </div>
+            </div>
+            <Button type="submit" className="w-full h-12 text-lg font-bold" disabled={loading}>
+              {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Créer mon compte & Créditer"}
+            </Button>
+            <Button variant="ghost" className="w-full" onClick={() => setStep('phone')} disabled={loading}>
+              Modifier le numéro
+            </Button>
+          </form>
+        )}
       </CardContent>
-      <CardFooter>
-        <p className="text-xs text-center w-full text-gray-400">
-          En continuant, vous acceptez de recevoir des notifications de fidélité via WhatsApp.
-        </p>
-      </CardFooter>
     </Card>
   )
 }

@@ -1,6 +1,5 @@
 import type { Client, PointsRule } from '@/lib/supabase/types'
 import { createClient } from '@/lib/supabase/client'
-import { sendMessage } from '@/lib/whatsapp/client'
 
 // ============================================================
 // Calcul des points selon le montant payé et la règle active
@@ -112,20 +111,6 @@ export async function creditPoints(input: CreditPointsInput): Promise<{
   if (updateError) {
     throw new Error('Erreur lors de la mise à jour des points')
   }
-
-  // Notification WhatsApp asynchrone (ne bloque pas si ça échoue)
-  sendMessage({
-    phone: client.phone,
-    templateName: 'points_update',
-    variables: {
-      name: client.name,
-      restaurant: restaurantName,
-      earned: pointsEarned,
-      balance: newBalance,
-    },
-  }).catch((err) =>
-    console.error('[WhatsApp] Erreur envoi points_update:', err)
-  )
 
   return { pointsEarned, newBalance, visitId: visit.id }
 }
