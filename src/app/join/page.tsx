@@ -52,15 +52,30 @@ function JoinContent() {
         .eq('restaurant_id', restaurantId)
         .single()
 
-      if (client) {
-        // Client existe, on crédite directement
+      if (clientError || !client) {
+        // Créer nouveau client
+        const { data: newClient, error: createError } = await (supabase.from('clients') as any)
+          .insert({
+            restaurant_id: restaurantId,
+            name: name,
+            phone: phone,
+            points_balance: 0,
+            total_visits: 0,
+            total_spent: 0
+          })
+          .select()
+          .single()
+        
+        if (createError) throw createError
+        console.log('Nouveau client créé:', newClient)
+        await processCredit(newClient)
+      } else {
+        console.log('Client existant trouvé:', client)
         setName(client.name)
         await processCredit(client)
-      } else {
-        // Nouveau client, on demande le nom
-        setStep('name')
       }
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Erreur lors de la vérification/création:', error)
       setStep('name')
     } finally {
       setLoading(false)
@@ -72,6 +87,7 @@ function JoinContent() {
     if (!name) return
 
     setLoading(true)
+    console.log('Tentative de création de compte pour:', name, phone)
     try {
       const { data: newClient, error: createError } = await (supabase.from('clients') as any)
         .insert({
@@ -85,12 +101,18 @@ function JoinContent() {
         .select()
         .single()
       
-      if (createError) throw createError
+      if (createError) {
+        console.error('Erreur Supabase insertion:', createError)
+        throw createError
+      }
+      
+      console.log('Compte créé avec succès:', newClient)
       await processCredit(newClient)
     } catch (error: any) {
+      console.error('Erreur handleRegisterAndCredit:', error)
       toast({
         title: "Erreur",
-        description: "Impossible de créer votre compte.",
+        description: error.message || "Impossible de créer votre compte.",
         variant: "destructive"
       })
     } finally {
