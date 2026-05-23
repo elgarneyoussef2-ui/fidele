@@ -83,8 +83,8 @@ export async function creditPoints(input: CreditPointsInput): Promise<{
   const newSpent = Number(client.total_spent) + amountPaid
 
   // Insérer la visite
-  const { data: visit, error: visitError } = await supabase
-    .from('visits')
+  const { data: visit, error: visitError } = await (supabase
+    .from('visits') as any)
     .insert({
       client_id: clientId,
       restaurant_id: restaurantId,
