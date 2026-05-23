@@ -27,8 +27,8 @@ function JoinContent() {
   useEffect(() => {
     async function fetchRestaurant() {
       if (restaurantId) {
-        const { data } = await supabase
-          .from('restaurants')
+        const { data } = await (supabase
+          .from('restaurants') as any)
           .select('name')
           .eq('id', restaurantId)
           .single()
