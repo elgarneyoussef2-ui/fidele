@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { CheckCircle2, Loader2, Star, Smartphone, User, ArrowRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
+import { processJoinAndCredit, checkExistingClient } from './actions'
 
 function JoinContent() {
   const searchParams = useSearchParams()
@@ -42,28 +43,33 @@ function JoinContent() {
 
   const handleCheckPhone = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!phone) return
+    if (!phone || !restaurantId) return
 
     setLoading(true)
     try {
-      const { data: client, error: clientError } = await (supabase.from('clients') as any)
-        .select('*')
-        .eq('phone', phone)
-        .eq('restaurant_id', restaurantId)
-        .single()
+      const { client } = await checkExistingClient(phone, restaurantId)
 
       if (client) {
-        // Client existe, on crédite directement
-        console.log('Client existant trouvé:', client)
         setName(client.name)
-        await processCredit(client)
+        const result = await processJoinAndCredit({
+          restaurantId,
+          phone,
+          name: client.name,
+          amount: Number(amount)
+        })
+
+        if (result.success) {
+          setPointsEarned(result.pointsEarned!)
+          setNewBalance(result.newBalance!)
+          setStep('success')
+        } else {
+          throw new Error(result.error)
+        }
       } else {
-        // Nouveau client, on demande le nom
-        console.log('Nouveau numéro, passage à l\'étape nom')
         setStep('name')
       }
     } catch (error: any) {
-      console.log('Erreur lors de la vérification (souvent client non trouvé):', error)
+      console.error('Erreur checkPhone:', error)
       setStep('name')
     } finally {
       setLoading(false)
@@ -72,30 +78,28 @@ function JoinContent() {
 
   const handleRegisterAndCredit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!name) return
+    if (!name || !restaurantId) return
 
     setLoading(true)
-    console.log('Tentative de création de compte pour:', name, phone)
     try {
-      const { data: newClient, error: createError } = await (supabase.from('clients') as any)
-        .insert({
-          restaurant_id: restaurantId,
-          name: name,
-          phone: phone,
-          points_balance: 0,
-          total_visits: 0,
-          total_spent: 0
+      const result = await processJoinAndCredit({
+        restaurantId,
+        phone,
+        name,
+        amount: Number(amount)
+      })
+
+      if (result.success) {
+        setPointsEarned(result.pointsEarned!)
+        setNewBalance(result.newBalance!)
+        setStep('success')
+        toast({
+          title: "Succès !",
+          description: `Compte créé et +${result.pointsEarned} points crédités !`,
         })
-        .select()
-        .single()
-      
-      if (createError) {
-        console.error('Erreur Supabase insertion:', createError)
-        throw createError
+      } else {
+        throw new Error(result.error)
       }
-      
-      console.log('Compte créé avec succès:', newClient)
-      await processCredit(newClient)
     } catch (error: any) {
       console.error('Erreur handleRegisterAndCredit:', error)
       toast({
@@ -105,42 +109,6 @@ function JoinContent() {
       })
     } finally {
       setLoading(false)
-    }
-  }
-
-  const processCredit = async (client: any) => {
-    const earned = Math.floor(Number(amount) / 10)
-    const updatedBalance = client.points_balance + earned
-
-    try {
-      // 1. Enregistrer la visite
-      await (supabase.from('visits') as any).insert({
-        client_id: client.id,
-        restaurant_id: restaurantId,
-        amount_paid: Number(amount),
-        points_earned: earned
-      })
-
-      // 2. Mettre à jour le solde
-      await (supabase.from('clients') as any)
-        .update({
-          points_balance: updatedBalance,
-          total_visits: client.total_visits + 1,
-          total_spent: client.total_spent + Number(amount),
-          last_visit_at: new Date().toISOString()
-        })
-        .eq('id', client.id)
-
-      setPointsEarned(earned)
-      setNewBalance(updatedBalance)
-      setStep('success')
-      
-      toast({
-        title: "Succès !",
-        description: `+${earned} points crédités !`,
-      })
-    } catch (error) {
-      throw error
     }
   }
 
