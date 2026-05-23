@@ -12,17 +12,16 @@ import QRCode from 'qrcode'
 export default function GenerateQRPage() {
   const [amount, setAmount] = useState<string>('')
   const [qrDataUrl, setQrDataUrl] = useState<string>('')
-  
+
   // Simulation de l'ID du restaurant (à récupérer via l'auth normalement)
   const restaurantId = "867d37b9-065f-46af-b1e7-4a837f4881fa"
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
   useEffect(() => {
     if (amount && Number(amount) > 0) {
-      // Le QR code contient une URL vers la page de crédit pour le client
-      // Format : /join?restaurantId=...&amount=...
-      const url = `${appUrl}/join?restaurantId=${restaurantId}&amount=${amount}`
-      
+      // On utilise l'origine actuelle du navigateur pour construire l'URL
+      const origin = typeof window !== 'undefined' ? window.location.origin : ''
+      const url = `${origin}/join?restaurantId=${restaurantId}&amount=${amount}`
+
       QRCode.toDataURL(url, {
         width: 300,
         margin: 2,
@@ -31,12 +30,12 @@ export default function GenerateQRPage() {
           light: '#ffffff',
         },
       })
-      .then(url => setQrDataUrl(url))
-      .catch(err => console.error(err))
+        .then(url => setQrDataUrl(url))
+        .catch(err => console.error(err))
     } else {
       setQrDataUrl('')
     }
-  }, [amount, appUrl, restaurantId])
+  }, [amount, restaurantId])
 
   const handlePrint = () => {
     window.print()
