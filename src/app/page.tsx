@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 
-// La page racine redirige vers le dashboard (ou login via middleware)
+// La page racine redirige vers la page de test du restaurant
 export default function RootPage() {
-  redirect('/dashboard')
+  redirect('/restaurant-test')
 }
