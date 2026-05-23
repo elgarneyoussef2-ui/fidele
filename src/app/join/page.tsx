@@ -46,7 +46,7 @@ function JoinContent() {
 
     setLoading(true)
     try {
-      const { data: client, error } = await (supabase.from('clients') as any)
+      const { data: client, error: clientError } = await (supabase.from('clients') as any)
         .select('*')
         .eq('phone', phone)
         .eq('restaurant_id', restaurantId)
