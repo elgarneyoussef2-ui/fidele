@@ -38,18 +38,22 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/api/webhooks')
 
   // Rediriger vers login si non authentifié sur une route protégée
+  /* Désactivé temporairement
   if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
   }
+  */
 
   // Rediriger vers dashboard si déjà connecté sur les pages auth
+  /* Désactivé temporairement
   if (user && (pathname === '/login' || pathname === '/register')) {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'
     return NextResponse.redirect(url)
   }
+  */
 
   return supabaseResponse
 }
