@@ -52,30 +52,18 @@ function JoinContent() {
         .eq('restaurant_id', restaurantId)
         .single()
 
-      if (clientError || !client) {
-        // Créer nouveau client
-        const { data: newClient, error: createError } = await (supabase.from('clients') as any)
-          .insert({
-            restaurant_id: restaurantId,
-            name: name,
-            phone: phone,
-            points_balance: 0,
-            total_visits: 0,
-            total_spent: 0
-          })
-          .select()
-          .single()
-        
-        if (createError) throw createError
-        console.log('Nouveau client créé:', newClient)
-        await processCredit(newClient)
-      } else {
+      if (client) {
+        // Client existe, on crédite directement
         console.log('Client existant trouvé:', client)
         setName(client.name)
         await processCredit(client)
+      } else {
+        // Nouveau client, on demande le nom
+        console.log('Nouveau numéro, passage à l\'étape nom')
+        setStep('name')
       }
     } catch (error: any) {
-      console.error('Erreur lors de la vérification/création:', error)
+      console.log('Erreur lors de la vérification (souvent client non trouvé):', error)
       setStep('name')
     } finally {
       setLoading(false)
