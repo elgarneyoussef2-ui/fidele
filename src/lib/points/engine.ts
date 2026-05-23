@@ -66,15 +66,17 @@ export async function creditPoints(input: CreditPointsInput): Promise<{
   const pointsEarned = calculatePoints(amountPaid, rule)
 
   // Récupérer le client courant
-  const { data: client, error: clientError } = await supabase
+  const { data, error: clientError } = await supabase
     .from('clients')
     .select('points_balance, total_visits, total_spent, name, phone')
     .eq('id', clientId)
     .single()
 
-  if (clientError || !client) {
+  if (clientError || !data) {
     throw new Error('Client introuvable')
   }
+
+  const client = data as Pick<Client, 'points_balance' | 'total_visits' | 'total_spent' | 'name' | 'phone'>
 
   const newBalance = client.points_balance + pointsEarned
   const newVisits = client.total_visits + 1
