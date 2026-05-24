@@ -2,8 +2,10 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, Gift, QrCode, LogOut, Zap } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { LayoutDashboard, Gift, QrCode, LogOut } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { createClient } from '@/lib/supabase/client'
 
 const NAV = [
   { href: '/dashboard',   label: 'Dashboard',   icon: LayoutDashboard },
@@ -14,12 +16,35 @@ const NAV = [
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router   = useRouter()
+  const [restaurantName, setRestaurantName] = useState('')
+  const [userEmail, setUserEmail]           = useState('')
+
+  useEffect(() => {
+    async function load() {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      setUserEmail(user.email ?? '')
+      // Fetch restaurant name
+      const { data } = await (supabase.from('restaurants') as any)
+        .select('name')
+        .eq('user_id', user.id)
+        .single()
+      if (data) setRestaurantName(data.name)
+    }
+    load()
+  }, [])
 
   async function handleLogout() {
-    await fetch('/api/auth/logout', { method: 'POST' })
+    const supabase = createClient()
+    await supabase.auth.signOut()
     router.push('/login')
     router.refresh()
   }
+
+  const initials = restaurantName
+    ? restaurantName.split(' ').map((w: string) => w[0]).slice(0, 2).join('').toUpperCase()
+    : '…'
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -51,12 +76,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         {/* Bas sidebar */}
         <div className="p-4 border-t space-y-3">
           <div className="flex items-center gap-2 px-1">
-            <div className="w-7 h-7 rounded-full bg-[#185FA5]/10 flex items-center justify-center shrink-0">
-              <Zap className="h-3.5 w-3.5 text-[#185FA5]" />
+            <div className="w-7 h-7 rounded-full bg-[#185FA5] flex items-center justify-center shrink-0">
+              <span className="text-white text-[10px] font-bold">{initials}</span>
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-medium text-gray-700 truncate">Compte démo</p>
-              <p className="text-[10px] text-gray-400 truncate">demo@taghra.ma</p>
+              <p className="text-xs font-medium text-gray-700 truncate">{restaurantName || '…'}</p>
+              <p className="text-[10px] text-gray-400 truncate">{userEmail}</p>
             </div>
           </div>
           <button
@@ -79,12 +104,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             <LogOut className="h-5 w-5" />
           </button>
         </header>
-
-        {/* Bannière démo */}
-        <div className="bg-amber-50 border-b border-amber-200 px-4 py-1.5 flex items-center gap-2 text-amber-700 text-xs">
-          <Zap className="h-3 w-3 shrink-0" />
-          <span>Mode démo — données fictives, aucune modification n'est sauvegardée.</span>
-        </div>
 
         <main className="flex-1 overflow-y-auto">
           {children}

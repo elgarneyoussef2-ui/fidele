@@ -5,30 +5,46 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import { QrCode, Download, Printer } from 'lucide-react'
+import { QrCode, Download, Printer, Loader2 } from 'lucide-react'
 import AppShell from '@/components/dashboard/AppShell'
 import QRCode from 'qrcode'
+import { createClient } from '@/lib/supabase/client'
 
-const RESTAURANT_ID = '867d37b9-065f-46af-b1e7-4a837f4881fa'
 const POINTS_PER_10_MAD = 1
 
 export default function GenerateQRPage() {
-  const [amount,    setAmount]    = useState('')
-  const [qrDataUrl, setQrDataUrl] = useState('')
+  const [amount,       setAmount]       = useState('')
+  const [qrDataUrl,    setQrDataUrl]    = useState('')
+  const [restaurantId, setRestaurantId] = useState<string | null>(null)
+
+  // Load restaurant ID for the logged-in user
+  useEffect(() => {
+    async function load() {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data } = await (supabase.from('restaurants') as any)
+        .select('id')
+        .eq('user_id', user.id)
+        .single()
+      if (data) setRestaurantId(data.id)
+    }
+    load()
+  }, [])
 
   const amountNum = Number(amount)
   const pts       = amountNum > 0 ? Math.floor(amountNum / 10) * POINTS_PER_10_MAD : 0
 
   useEffect(() => {
-    if (amountNum > 0) {
+    if (amountNum > 0 && restaurantId) {
       const origin = typeof window !== 'undefined' ? window.location.origin : ''
-      QRCode.toDataURL(`${origin}/join?restaurantId=${RESTAURANT_ID}&amount=${amount}`, {
+      QRCode.toDataURL(`${origin}/join?restaurantId=${restaurantId}&amount=${amount}`, {
         width: 280, margin: 2, color: { dark: '#185FA5', light: '#ffffff' },
       }).then(setQrDataUrl).catch(console.error)
     } else {
       setQrDataUrl('')
     }
-  }, [amount, amountNum])
+  }, [amount, amountNum, restaurantId])
 
   return (
     <AppShell>
@@ -39,7 +55,12 @@ export default function GenerateQRPage() {
           <p className="text-gray-500 text-sm mt-0.5">Saisir le montant pour créditer les points du client.</p>
         </div>
 
-        {/* Saisie montant */}
+        {!restaurantId && (
+          <div className="flex items-center gap-2 text-sm text-gray-500 py-2">
+            <Loader2 className="h-4 w-4 animate-spin" /> Chargement du restaurant…
+          </div>
+        )}
+
         <Card>
           <CardContent className="p-5 space-y-4">
             <div className="space-y-1.5">
@@ -54,6 +75,7 @@ export default function GenerateQRPage() {
                   onChange={e => setAmount(e.target.value)}
                   className="text-lg pr-16"
                   autoFocus
+                  disabled={!restaurantId}
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 font-medium">MAD</span>
               </div>
@@ -68,7 +90,6 @@ export default function GenerateQRPage() {
           </CardContent>
         </Card>
 
-        {/* QR Code */}
         <Card>
           <CardContent className="p-6 flex flex-col items-center">
             {qrDataUrl ? (

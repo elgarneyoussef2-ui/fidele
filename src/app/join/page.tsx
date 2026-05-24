@@ -64,6 +64,8 @@ function JoinContent() {
           setPointsEarned(result.pointsEarned!)
           setNewBalance(result.newBalance!)
           setStep('success')
+          localStorage.setItem('taghra_client_phone', phone)
+          localStorage.setItem('taghra_client_name', client.name)
         } else {
           throw new Error(result.error)
         }
@@ -95,6 +97,8 @@ function JoinContent() {
         setPointsEarned(result.pointsEarned!)
         setNewBalance(result.newBalance!)
         setStep('success')
+        localStorage.setItem('taghra_client_phone', phone)
+        localStorage.setItem('taghra_client_name', name)
         toast({
           title: "Succès !",
           description: `Compte créé et +${result.pointsEarned} points crédités !`,
