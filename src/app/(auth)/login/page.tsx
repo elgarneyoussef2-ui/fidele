@@ -5,7 +5,7 @@ import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { createClient } from '@/lib/supabase/client'
+import { signInAction } from './actions'
 
 export default function LoginPage() {
   const [email,    setEmail]    = useState('')
@@ -18,32 +18,13 @@ export default function LoginPage() {
     setError('')
     setLoading(true)
 
-    try {
-      if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-        setError('Variables Supabase manquantes (NEXT_PUBLIC_SUPABASE_URL / ANON_KEY).')
-        setLoading(false)
-        return
-      }
+    const result = await signInAction(email, password)
 
-      const supabase = createClient()
-      const timeout = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('Timeout: Supabase ne répond pas (vérifiez les variables d\'env Vercel)')), 8000)
-      )
-      const { error: authError } = await Promise.race([
-        supabase.auth.signInWithPassword({ email, password }),
-        timeout,
-      ]) as Awaited<ReturnType<typeof supabase.auth.signInWithPassword>>
-
-      if (authError) {
-        setError(authError.message)
-        setLoading(false)
-      } else {
-        window.location.href = '/dashboard'
-      }
-    } catch (err: any) {
-      setError(err?.message ?? 'Erreur réseau.')
+    if (result?.error) {
+      setError(result.error)
       setLoading(false)
     }
+    // Si pas d'erreur, le server action redirige vers /dashboard
   }
 
   return (
