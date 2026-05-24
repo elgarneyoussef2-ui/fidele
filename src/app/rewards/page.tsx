@@ -6,21 +6,20 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import DashboardNav from '@/components/dashboard/DashboardNav'
-import {
-  Plus, Pencil, Medal, Award, Trophy,
-  X, ToggleLeft, ToggleRight, Gift,
-} from 'lucide-react'
+import AppShell from '@/components/dashboard/AppShell'
+import { Plus, Pencil, Medal, Award, Trophy, X, Gift, Check, ToggleLeft, ToggleRight } from 'lucide-react'
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Tier {
   id: number
   name: string
-  range: string
+  min: number
+  max: number | null
   color: string
   bg: string
   border: string
+  textColor: string
   icon: React.ElementType
   perks: string[]
 }
@@ -35,187 +34,269 @@ interface Reward {
   active: boolean
 }
 
-// ─── Données mockées ──────────────────────────────────────────────────────────
+// ─── Données initiales ────────────────────────────────────────────────────────
 
-const INITIAL_TIERS: Tier[] = [
+const INIT_TIERS: Tier[] = [
   {
-    id: 1,
-    name: 'Bronze',
-    range: '0 – 500 pts',
-    color: 'text-amber-700',
-    bg: 'bg-amber-50',
-    border: 'border-amber-200',
+    id: 1, name: 'Bronze', min: 0, max: 500,
+    color: 'border-amber-300', bg: 'bg-amber-50', border: 'border-amber-300', textColor: 'text-amber-700',
     icon: Medal,
     perks: ['Thé à la menthe offert à chaque visite', 'Accès aux offres du mois'],
   },
   {
-    id: 2,
-    name: 'Argent',
-    range: '501 – 1 000 pts',
-    color: 'text-slate-600',
-    bg: 'bg-slate-50',
-    border: 'border-slate-200',
+    id: 2, name: 'Argent', min: 501, max: 1000,
+    color: 'border-slate-300', bg: 'bg-slate-50', border: 'border-slate-300', textColor: 'text-slate-600',
     icon: Award,
     perks: ['-10% sur la commande', 'Dessert maison offert', 'File prioritaire le weekend'],
   },
   {
-    id: 3,
-    name: 'Or',
-    range: '1 001 pts et +',
-    color: 'text-yellow-600',
-    bg: 'bg-yellow-50',
-    border: 'border-yellow-200',
+    id: 3, name: 'Or', min: 1001, max: null,
+    color: 'border-yellow-400', bg: 'bg-yellow-50', border: 'border-yellow-400', textColor: 'text-yellow-600',
     icon: Trophy,
-    perks: ['-20% sur toutes les commandes', 'Table réservée sans attente', 'Plat surprise offert chaque mois', 'Invitation événements exclusifs'],
+    perks: ['-20% sur toutes les commandes', 'Table réservée sans attente', 'Plat surprise offert chaque mois'],
   },
 ]
 
-const INITIAL_REWARDS: Reward[] = [
-  { id: 1, name: 'Thé à la menthe offert',   description: 'Un verre de thé à la menthe marocaine',   points: 100,  limit: null, used: 38, active: true  },
-  { id: 2, name: 'Dessert gratuit',            description: 'Choisir parmi la sélection du chef',       points: 200,  limit: 50,   used: 21, active: true  },
-  { id: 3, name: 'Réduction 15%',             description: "Sur l'ensemble de la commande",            points: 350,  limit: null, used: 15, active: true  },
-  { id: 4, name: 'Plat principal offert',      description: 'Un tajine ou couscous au choix',           points: 500,  limit: 20,   used: 7,  active: false },
-  { id: 5, name: 'Repas complet pour 2',       description: 'Entrée, plat et dessert pour 2 personnes', points: 1000, limit: 10,   used: 2,  active: true  },
+const INIT_REWARDS: Reward[] = [
+  { id: 1, name: 'Thé à la menthe offert',  description: 'Un verre de thé à la menthe marocaine',    points: 100,  limit: null, used: 38, active: true  },
+  { id: 2, name: 'Dessert gratuit',           description: "Choisir parmi la sélection du chef",       points: 200,  limit: 50,   used: 21, active: true  },
+  { id: 3, name: 'Réduction 15%',            description: "Sur l'ensemble de la commande",             points: 350,  limit: null, used: 15, active: true  },
+  { id: 4, name: 'Plat principal offert',     description: 'Un tajine ou couscous au choix',            points: 500,  limit: 20,   used: 7,  active: false },
+  { id: 5, name: 'Repas complet pour 2',      description: 'Entrée, plat et dessert pour 2 personnes', points: 1000, limit: 10,   used: 2,  active: true  },
 ]
 
-// ─── Modale Nouvelle Récompense ───────────────────────────────────────────────
+// ─── Modale générique ─────────────────────────────────────────────────────────
 
-interface ModalProps {
-  onClose: () => void
-  onSave:  (r: Omit<Reward, 'id' | 'used'>) => void
-}
-
-function NewRewardModal({ onClose, onSave }: ModalProps) {
-  const [name,        setName]        = useState('')
-  const [description, setDescription] = useState('')
-  const [points,      setPoints]      = useState('')
-  const [limit,       setLimit]       = useState('')
-  const [active,      setActive]      = useState(true)
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!name || !points) return
-    onSave({
-      name,
-      description,
-      points:  parseInt(points),
-      limit:   limit ? parseInt(limit) : null,
-      active,
-    })
-    onClose()
-  }
-
+function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
-        <div className="flex items-center justify-between p-5 border-b">
-          <h2 className="font-semibold text-gray-900">Nouvelle récompense</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-700">
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-md" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-4 border-b">
+          <h2 className="font-semibold text-gray-900">{title}</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-700 transition-colors">
             <X className="h-5 w-5" />
           </button>
         </div>
-
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="r-name">Nom</Label>
-            <Input id="r-name" placeholder="Ex: Dessert gratuit" value={name} onChange={e => setName(e.target.value)} required />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="r-desc">Description</Label>
-            <Input id="r-desc" placeholder="Détails de la récompense" value={description} onChange={e => setDescription(e.target.value)} />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="r-pts">Points requis</Label>
-              <Input id="r-pts" type="number" min={1} placeholder="Ex: 200" value={points} onChange={e => setPoints(e.target.value)} required />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="r-lim">Limite d'utilisation</Label>
-              <Input id="r-lim" type="number" min={1} placeholder="Illimité" value={limit} onChange={e => setLimit(e.target.value)} />
-            </div>
-          </div>
-          <div className="flex items-center gap-3 pt-1">
-            <button type="button" onClick={() => setActive(a => !a)} className="focus:outline-none">
-              {active
-                ? <ToggleRight className="h-7 w-7 text-[#185FA5]" />
-                : <ToggleLeft  className="h-7 w-7 text-gray-300"  />}
-            </button>
-            <span className="text-sm text-gray-600">Activer immédiatement</span>
-          </div>
-
-          <div className="flex gap-2 pt-2">
-            <Button type="button" variant="outline" className="flex-1" onClick={onClose}>Annuler</Button>
-            <Button type="submit" className="flex-1 bg-[#185FA5] hover:bg-[#124880]">Ajouter</Button>
-          </div>
-        </form>
+        {children}
       </div>
     </div>
   )
 }
 
-// ─── Page principale ──────────────────────────────────────────────────────────
+// ─── Modale palier ────────────────────────────────────────────────────────────
+
+function TierModal({ tier, onClose, onSave }: {
+  tier: Tier | null
+  onClose: () => void
+  onSave: (t: Partial<Tier> & { id?: number }) => void
+}) {
+  const [name,  setName]  = useState(tier?.name  ?? '')
+  const [min,   setMin]   = useState(String(tier?.min  ?? ''))
+  const [max,   setMax]   = useState(tier?.max != null ? String(tier.max) : '')
+  const [perks, setPerks] = useState<string[]>(tier?.perks ?? [''])
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    onSave({ id: tier?.id, name, min: Number(min), max: max ? Number(max) : null, perks: perks.filter(Boolean) })
+    onClose()
+  }
+
+  return (
+    <Modal title={tier ? 'Modifier le palier' : 'Nouveau palier'} onClose={onClose}>
+      <form onSubmit={handleSubmit} className="p-5 space-y-4">
+        <div className="space-y-1.5">
+          <Label>Nom du palier</Label>
+          <Input value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Platine" required />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label>Points min</Label>
+            <Input type="number" min={0} value={min} onChange={e => setMin(e.target.value)} required />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Points max</Label>
+            <Input type="number" min={0} value={max} onChange={e => setMax(e.target.value)} placeholder="Illimité" />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Label>Avantages</Label>
+          {perks.map((perk, i) => (
+            <div key={i} className="flex gap-2">
+              <Input
+                value={perk}
+                onChange={e => setPerks(prev => prev.map((p, j) => j === i ? e.target.value : p))}
+                placeholder={`Avantage ${i + 1}`}
+              />
+              {perks.length > 1 && (
+                <button type="button" onClick={() => setPerks(prev => prev.filter((_, j) => j !== i))}
+                  className="text-gray-400 hover:text-red-500 transition-colors shrink-0">
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          ))}
+          <button type="button" onClick={() => setPerks(prev => [...prev, ''])}
+            className="text-xs text-[#185FA5] hover:underline">
+            + Ajouter un avantage
+          </button>
+        </div>
+        <div className="flex gap-2 pt-2">
+          <Button type="button" variant="outline" className="flex-1" onClick={onClose}>Annuler</Button>
+          <Button type="submit" className="flex-1 bg-[#185FA5] hover:bg-[#124880]">
+            <Check className="h-4 w-4 mr-1.5" /> Enregistrer
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  )
+}
+
+// ─── Modale récompense ────────────────────────────────────────────────────────
+
+function RewardModal({ reward, onClose, onSave }: {
+  reward: Reward | null
+  onClose: () => void
+  onSave: (r: Omit<Reward, 'id' | 'used'> & { id?: number }) => void
+}) {
+  const [name,        setName]        = useState(reward?.name        ?? '')
+  const [description, setDescription] = useState(reward?.description ?? '')
+  const [points,      setPoints]      = useState(reward?.points != null ? String(reward.points) : '')
+  const [limit,       setLimit]       = useState(reward?.limit  != null ? String(reward.limit)  : '')
+  const [active,      setActive]      = useState(reward?.active ?? true)
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    onSave({ id: reward?.id, name, description, points: Number(points), limit: limit ? Number(limit) : null, active })
+    onClose()
+  }
+
+  return (
+    <Modal title={reward ? 'Modifier la récompense' : 'Nouvelle récompense'} onClose={onClose}>
+      <form onSubmit={handleSubmit} className="p-5 space-y-4">
+        <div className="space-y-1.5">
+          <Label>Nom</Label>
+          <Input value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Dessert gratuit" required />
+        </div>
+        <div className="space-y-1.5">
+          <Label>Description</Label>
+          <Input value={description} onChange={e => setDescription(e.target.value)} placeholder="Détails de la récompense" />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label>Points requis</Label>
+            <Input type="number" min={1} value={points} onChange={e => setPoints(e.target.value)} placeholder="Ex: 200" required />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Limite d'utilisation</Label>
+            <Input type="number" min={1} value={limit} onChange={e => setLimit(e.target.value)} placeholder="Illimité" />
+          </div>
+        </div>
+        <button type="button" onClick={() => setActive(a => !a)}
+          className="flex items-center gap-2.5 w-full text-left">
+          {active
+            ? <ToggleRight className="h-6 w-6 text-[#185FA5] shrink-0" />
+            : <ToggleLeft  className="h-6 w-6 text-gray-300 shrink-0" />}
+          <span className="text-sm text-gray-700">{active ? 'Récompense active' : 'Récompense inactive'}</span>
+        </button>
+        <div className="flex gap-2 pt-2">
+          <Button type="button" variant="outline" className="flex-1" onClick={onClose}>Annuler</Button>
+          <Button type="submit" className="flex-1 bg-[#185FA5] hover:bg-[#124880]">
+            <Check className="h-4 w-4 mr-1.5" /> Enregistrer
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  )
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function RewardsPage() {
-  const [rewards,     setRewards]     = useState<Reward[]>(INITIAL_REWARDS)
-  const [modalOpen,   setModalOpen]   = useState(false)
+  const [tiers,        setTiers]        = useState<Tier[]>(INIT_TIERS)
+  const [rewards,      setRewards]      = useState<Reward[]>(INIT_REWARDS)
+  const [tierModal,    setTierModal]    = useState<{ open: boolean; tier: Tier | null }>({ open: false, tier: null })
+  const [rewardModal,  setRewardModal]  = useState<{ open: boolean; reward: Reward | null }>({ open: false, reward: null })
+
+  function saveTier(data: Partial<Tier> & { id?: number }) {
+    if (data.id) {
+      setTiers(prev => prev.map(t => t.id === data.id ? { ...t, ...data } : t))
+    } else {
+      const colors = ['border-blue-300', 'border-purple-300', 'border-pink-300']
+      const bgs    = ['bg-blue-50', 'bg-purple-50', 'bg-pink-50']
+      const texts  = ['text-blue-600', 'text-purple-600', 'text-pink-600']
+      const icons  = [Medal, Award, Trophy]
+      const idx    = tiers.length % 3
+      setTiers(prev => [...prev, {
+        id: Date.now(), color: colors[idx], bg: bgs[idx], border: colors[idx], textColor: texts[idx],
+        icon: icons[idx], perks: [],
+        name: data.name ?? '', min: data.min ?? 0, max: data.max ?? null,
+        ...data,
+      } as Tier])
+    }
+  }
+
+  function saveReward(data: Omit<Reward, 'id' | 'used'> & { id?: number }) {
+    if (data.id) {
+      setRewards(prev => prev.map(r => r.id === data.id ? { ...r, ...data } : r))
+    } else {
+      setRewards(prev => [...prev, { ...data, id: Date.now(), used: 0 }])
+    }
+  }
 
   function toggleReward(id: number) {
     setRewards(prev => prev.map(r => r.id === id ? { ...r, active: !r.active } : r))
   }
 
-  function addReward(r: Omit<Reward, 'id' | 'used'>) {
-    setRewards(prev => [...prev, { ...r, id: Date.now(), used: 0 }])
+  function deleteReward(id: number) {
+    setRewards(prev => prev.filter(r => r.id !== id))
   }
 
   return (
-    <>
-      <DashboardNav />
-
-      <div className="p-6 space-y-8 bg-gray-50 min-h-screen max-w-7xl mx-auto">
+    <AppShell>
+      <div className="p-6 space-y-8 max-w-5xl mx-auto">
 
         {/* En-tête */}
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Récompenses</h1>
-          <p className="text-gray-500 mt-1">Gérez les paliers de fidélité et les récompenses de votre restaurant.</p>
+          <h1 className="text-2xl font-bold text-gray-900">Récompenses</h1>
+          <p className="text-gray-500 text-sm mt-0.5">Gérez les paliers et récompenses de fidélité.</p>
         </div>
 
-        {/* ── Section paliers ── */}
+        {/* ── Paliers ── */}
         <section>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
-              <Trophy className="h-5 w-5 text-yellow-500" />
-              Paliers de fidélité
+            <h2 className="font-semibold text-gray-800 flex items-center gap-2">
+              <Trophy className="h-4 w-4 text-yellow-500" /> Paliers de fidélité
             </h2>
-            <Button size="sm" variant="outline" className="gap-1.5">
-              <Plus className="h-4 w-4" /> Ajouter un palier
+            <Button size="sm" variant="outline" className="gap-1.5 text-xs"
+              onClick={() => setTierModal({ open: true, tier: null })}>
+              <Plus className="h-3.5 w-3.5" /> Ajouter un palier
             </Button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {INITIAL_TIERS.map(tier => {
+            {tiers.map(tier => {
               const Icon = tier.icon
               return (
-                <Card key={tier.id} className={`border-2 ${tier.border}`}>
-                  <CardHeader className={`${tier.bg} rounded-t-xl pb-3`}>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className={`p-2 rounded-full bg-white ${tier.color}`}>
-                          <Icon className="h-5 w-5" />
-                        </div>
-                        <CardTitle className={`text-lg ${tier.color}`}>{tier.name}</CardTitle>
-                      </div>
-                      <button className="text-gray-400 hover:text-gray-700 p-1 rounded hover:bg-white/70 transition-colors">
-                        <Pencil className="h-4 w-4" />
-                      </button>
+                <Card key={tier.id} className={`border-2 ${tier.border} overflow-hidden`}>
+                  <div className={`${tier.bg} px-4 py-3 flex items-center justify-between`}>
+                    <div className="flex items-center gap-2">
+                      <Icon className={`h-5 w-5 ${tier.textColor}`} />
+                      <span className={`font-semibold ${tier.textColor}`}>{tier.name}</span>
                     </div>
-                    <p className={`text-sm font-medium ${tier.color} mt-1`}>{tier.range}</p>
-                  </CardHeader>
-                  <CardContent className="pt-4">
-                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Avantages</p>
+                    <button
+                      onClick={() => setTierModal({ open: true, tier })}
+                      className={`${tier.textColor} opacity-60 hover:opacity-100 transition-opacity`}>
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                  <CardContent className="p-4">
+                    <p className="text-xs text-gray-500 mb-3">
+                      {tier.min.toLocaleString()} – {tier.max != null ? `${tier.max.toLocaleString()} pts` : '∞'}
+                    </p>
                     <ul className="space-y-1.5">
                       {tier.perks.map((p, i) => (
                         <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
-                          <span className={`mt-0.5 h-4 w-4 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${tier.bg} ${tier.color}`}>✓</span>
+                          <Check className={`h-3.5 w-3.5 mt-0.5 shrink-0 ${tier.textColor}`} />
                           {p}
                         </li>
                       ))}
@@ -227,92 +308,95 @@ export default function RewardsPage() {
           </div>
         </section>
 
-        {/* ── Section récompenses ── */}
+        {/* ── Récompenses ── */}
         <section>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
-              <Gift className="h-5 w-5 text-[#185FA5]" />
-              Récompenses disponibles
+            <h2 className="font-semibold text-gray-800 flex items-center gap-2">
+              <Gift className="h-4 w-4 text-[#185FA5]" /> Récompenses disponibles
             </h2>
-            <Button
-              size="sm"
-              className="gap-1.5 bg-[#185FA5] hover:bg-[#124880]"
-              onClick={() => setModalOpen(true)}
-            >
-              <Plus className="h-4 w-4" /> Nouvelle récompense
+            <Button size="sm" className="gap-1.5 text-xs bg-[#185FA5] hover:bg-[#124880]"
+              onClick={() => setRewardModal({ open: true, reward: null })}>
+              <Plus className="h-3.5 w-3.5" /> Nouvelle récompense
             </Button>
           </div>
 
           <Card>
             <CardContent className="p-0">
-              {/* En-tête tableau */}
-              <div className="hidden sm:grid grid-cols-[1fr_auto_auto_auto_auto] gap-4 px-5 py-3 border-b bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wide rounded-t-xl">
-                <span>Récompense</span>
-                <span className="text-right">Points</span>
-                <span className="text-right">Utilisations</span>
-                <span className="text-center">Statut</span>
-                <span></span>
-              </div>
-
-              <div className="divide-y">
-                {rewards.map(reward => (
-                  <div key={reward.id} className="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto_auto_auto] gap-2 sm:gap-4 items-center px-5 py-4">
-                    {/* Nom + description */}
-                    <div>
-                      <p className="font-medium text-gray-900">{reward.name}</p>
-                      {reward.description && (
-                        <p className="text-xs text-gray-500 mt-0.5">{reward.description}</p>
-                      )}
-                    </div>
-
-                    {/* Points */}
-                    <div className="flex sm:justify-end items-center gap-1">
-                      <span className="text-xs text-gray-400 sm:hidden">Points :</span>
-                      <Badge variant="secondary" className="font-semibold">
-                        {reward.points.toLocaleString()} pts
-                      </Badge>
-                    </div>
-
-                    {/* Utilisations */}
-                    <div className="text-sm text-gray-600 sm:text-right">
-                      <span className="sm:hidden text-xs text-gray-400">Utilisé : </span>
-                      {reward.used}
-                      {reward.limit && <span className="text-gray-400"> / {reward.limit}</span>}
-                    </div>
-
-                    {/* Toggle statut */}
-                    <div className="flex items-center gap-2 sm:justify-center">
-                      <button
-                        onClick={() => toggleReward(reward.id)}
-                        className="focus:outline-none"
-                        title={reward.active ? 'Désactiver' : 'Activer'}
-                      >
+              {rewards.length === 0 ? (
+                <div className="py-12 text-center text-gray-400 text-sm">
+                  Aucune récompense. Créez-en une !
+                </div>
+              ) : (
+                <div className="divide-y">
+                  {rewards.map(reward => (
+                    <div key={reward.id} className="flex items-center gap-4 px-5 py-3.5">
+                      {/* Toggle */}
+                      <button onClick={() => toggleReward(reward.id)} className="shrink-0">
                         {reward.active
                           ? <ToggleRight className="h-6 w-6 text-[#185FA5]" />
-                          : <ToggleLeft  className="h-6 w-6 text-gray-300"  />}
+                          : <ToggleLeft  className="h-6 w-6 text-gray-300" />}
                       </button>
-                      <span className="text-xs sm:hidden">
-                        {reward.active
-                          ? <Badge variant="success">Actif</Badge>
-                          : <Badge variant="secondary">Inactif</Badge>}
-                      </span>
-                    </div>
 
-                    {/* Bouton modifier */}
-                    <button className="text-gray-400 hover:text-[#185FA5] transition-colors sm:justify-self-end">
-                      <Pencil className="h-4 w-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
+                      {/* Infos */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className={`text-sm font-medium truncate ${!reward.active ? 'text-gray-400' : 'text-gray-900'}`}>
+                            {reward.name}
+                          </p>
+                          {!reward.active && <Badge variant="secondary" className="text-[10px] shrink-0">Inactif</Badge>}
+                        </div>
+                        {reward.description && (
+                          <p className="text-xs text-gray-400 truncate">{reward.description}</p>
+                        )}
+                      </div>
+
+                      {/* Points */}
+                      <Badge variant="secondary" className="font-semibold shrink-0 hidden sm:flex">
+                        {reward.points.toLocaleString()} pts
+                      </Badge>
+
+                      {/* Utilisations */}
+                      <p className="text-xs text-gray-400 shrink-0 hidden md:block">
+                        {reward.used}{reward.limit ? `/${reward.limit}` : ''} utilisations
+                      </p>
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          onClick={() => setRewardModal({ open: true, reward })}
+                          className="p-1.5 text-gray-400 hover:text-[#185FA5] rounded hover:bg-blue-50 transition-colors">
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={() => deleteReward(reward.id)}
+                          className="p-1.5 text-gray-400 hover:text-red-500 rounded hover:bg-red-50 transition-colors">
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </section>
       </div>
 
-      {modalOpen && (
-        <NewRewardModal onClose={() => setModalOpen(false)} onSave={addReward} />
+      {/* Modales */}
+      {tierModal.open && (
+        <TierModal
+          tier={tierModal.tier}
+          onClose={() => setTierModal({ open: false, tier: null })}
+          onSave={saveTier}
+        />
       )}
-    </>
+      {rewardModal.open && (
+        <RewardModal
+          reward={rewardModal.reward}
+          onClose={() => setRewardModal({ open: false, reward: null })}
+          onSave={saveReward}
+        />
+      )}
+    </AppShell>
   )
 }
