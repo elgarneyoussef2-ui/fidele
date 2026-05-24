@@ -1,8 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Gift, QrCode } from 'lucide-react'
+import { usePathname, useRouter } from 'next/navigation'
+import { LayoutDashboard, Gift, QrCode, LogOut, Zap } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const NAV = [
@@ -13,14 +13,23 @@ const NAV = [
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  const router   = useRouter()
+
+  async function handleLogout() {
+    await fetch('/api/auth/logout', { method: 'POST' })
+    router.push('/login')
+    router.refresh()
+  }
 
   return (
     <div className="flex h-screen bg-gray-50">
+
       {/* ── Sidebar desktop ── */}
       <aside className="hidden md:flex flex-col w-56 bg-white border-r shrink-0">
         <div className="h-14 flex items-center px-5 border-b">
           <span className="font-bold text-[#185FA5] text-xl tracking-tight">Taghra</span>
         </div>
+
         <nav className="flex-1 p-3 space-y-0.5 pt-4">
           {NAV.map(({ href, label, icon: Icon }) => (
             <Link
@@ -38,18 +47,44 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             </Link>
           ))}
         </nav>
-        <div className="p-4 border-t">
-          <p className="text-xs text-gray-400">Restaurant Test</p>
-          <p className="text-xs text-gray-400">v1.0</p>
+
+        {/* Bas sidebar */}
+        <div className="p-4 border-t space-y-3">
+          <div className="flex items-center gap-2 px-1">
+            <div className="w-7 h-7 rounded-full bg-[#185FA5]/10 flex items-center justify-center shrink-0">
+              <Zap className="h-3.5 w-3.5 text-[#185FA5]" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-gray-700 truncate">Compte démo</p>
+              <p className="text-[10px] text-gray-400 truncate">demo@taghra.ma</p>
+            </div>
+          </div>
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+          >
+            <LogOut className="h-4 w-4 shrink-0" />
+            Déconnexion
+          </button>
         </div>
       </aside>
 
       {/* ── Zone principale ── */}
       <div className="flex-1 flex flex-col overflow-hidden">
+
         {/* Mobile top bar */}
-        <header className="md:hidden h-14 bg-white border-b flex items-center px-4 shrink-0">
+        <header className="md:hidden h-14 bg-white border-b flex items-center justify-between px-4 shrink-0">
           <span className="font-bold text-[#185FA5] text-lg">Taghra</span>
+          <button onClick={handleLogout} className="text-gray-400 hover:text-red-500 transition-colors p-1">
+            <LogOut className="h-5 w-5" />
+          </button>
         </header>
+
+        {/* Bannière démo */}
+        <div className="bg-amber-50 border-b border-amber-200 px-4 py-1.5 flex items-center gap-2 text-amber-700 text-xs">
+          <Zap className="h-3 w-3 shrink-0" />
+          <span>Mode démo — données fictives, aucune modification n'est sauvegardée.</span>
+        </div>
 
         <main className="flex-1 overflow-y-auto">
           {children}
