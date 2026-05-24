@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
 
     const { data: restaurants, error } = await sb
       .from('restaurants')
-      .select('id, name, user_id')
+      .select('id, name, owner_id')
       .order('name', { ascending: true })
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
@@ -38,11 +38,11 @@ export async function GET(req: NextRequest) {
         // Email from auth
         let email = ''
         try {
-          const { data } = await sb.auth.admin.getUserById(r.user_id)
+          const { data } = await sb.auth.admin.getUserById(r.owner_id)
           email = (data as any)?.user?.email ?? ''
         } catch { /* ignore */ }
 
-        return { ...r, clientCount: count ?? 0, email }
+        return { ...r, user_id: r.owner_id, clientCount: count ?? 0, email }
       })
     )
 
@@ -78,9 +78,9 @@ export async function POST(req: NextRequest) {
 
     // 2. Create restaurant record
     const { error: restoError } = await sb.from('restaurants').insert({
-      user_id: authData.user.id,
+      owner_id: authData.user.id,
       name,
-      ...(address ? { address } : {}),
+      slug: name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + '-' + Date.now(),
     })
 
     if (restoError) {
