@@ -10,95 +10,104 @@ function adminSupabase() {
 }
 
 function requireAdmin(req: NextRequest) {
-  const cookie = req.cookies.get('taghra_admin')?.value
-  if (cookie !== 'authenticated') return false
-  return true
+  return req.cookies.get('taghra_admin')?.value === 'authenticated'
 }
 
-// GET  /api/admin/restaurants  – list all restaurants + client count
+// GET — list all restaurants + client count
 export async function GET(req: NextRequest) {
   if (!requireAdmin(req)) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
 
-  const sb = adminSupabase()
+  try {
+    const sb = adminSupabase()
 
-  const { data: restaurants, error } = await sb
-    .from('restaurants')
-    .select('id, name, user_id, created_at')
-    .order('created_at', { ascending: false })
+    const { data: restaurants, error } = await sb
+      .from('restaurants')
+      .select('id, name, user_id')
+      .order('name', { ascending: true })
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Client counts
-  const withCounts = await Promise.all(
-    (restaurants ?? []).map(async (r: any) => {
-      const { count } = await sb
-        .from('clients')
-        .select('*', { count: 'exact', head: true })
-        .eq('restaurant_id', r.id)
+    const withMeta = await Promise.all(
+      (restaurants ?? []).map(async (r: any) => {
+        // Client count
+        const { count } = await sb
+          .from('clients')
+          .select('*', { count: 'exact', head: true })
+          .eq('restaurant_id', r.id)
 
-      // Get email from auth
-      const { data: userData } = await sb.auth.admin.getUserById(r.user_id)
+        // Email from auth
+        let email = ''
+        try {
+          const { data } = await sb.auth.admin.getUserById(r.user_id)
+          email = (data as any)?.user?.email ?? ''
+        } catch { /* ignore */ }
 
-      return { ...r, clientCount: count ?? 0, email: userData?.user?.email ?? '' }
-    })
-  )
+        return { ...r, clientCount: count ?? 0, email }
+      })
+    )
 
-  return NextResponse.json(withCounts)
+    return NextResponse.json(withMeta)
+  } catch (e: any) {
+    return NextResponse.json({ error: e.message }, { status: 500 })
+  }
 }
 
-// POST /api/admin/restaurants  – create restaurant + auth user
+// POST — create restaurant + auth user
 export async function POST(req: NextRequest) {
   if (!requireAdmin(req)) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
 
-  const { name, email, password, address } = await req.json()
+  try {
+    const { name, email, password, address } = await req.json()
 
-  if (!name || !email || !password) {
-    return NextResponse.json({ error: 'Nom, email et mot de passe requis.' }, { status: 400 })
+    if (!name || !email || !password) {
+      return NextResponse.json({ error: 'Nom, email et mot de passe requis.' }, { status: 400 })
+    }
+
+    const sb = adminSupabase()
+
+    // 1. Create auth user
+    const { data: authData, error: authError } = await sb.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+    })
+
+    if (authError || !authData.user) {
+      return NextResponse.json({ error: authError?.message ?? 'Erreur création utilisateur' }, { status: 400 })
+    }
+
+    // 2. Create restaurant record
+    const { error: restoError } = await sb.from('restaurants').insert({
+      user_id: authData.user.id,
+      name,
+      ...(address ? { address } : {}),
+    })
+
+    if (restoError) {
+      await sb.auth.admin.deleteUser(authData.user.id)
+      return NextResponse.json({ error: restoError.message }, { status: 500 })
+    }
+
+    return NextResponse.json({ ok: true })
+  } catch (e: any) {
+    return NextResponse.json({ error: e.message }, { status: 500 })
   }
-
-  const sb = adminSupabase()
-
-  // 1. Create auth user
-  const { data: authData, error: authError } = await sb.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-  })
-
-  if (authError || !authData.user) {
-    return NextResponse.json({ error: authError?.message ?? 'Erreur création utilisateur' }, { status: 400 })
-  }
-
-  // 2. Create restaurant record
-  const { error: restoError } = await sb.from('restaurants').insert({
-    user_id: authData.user.id,
-    name,
-    address: address ?? null,
-  })
-
-  if (restoError) {
-    // Rollback auth user
-    await sb.auth.admin.deleteUser(authData.user.id)
-    return NextResponse.json({ error: restoError.message }, { status: 500 })
-  }
-
-  return NextResponse.json({ ok: true })
 }
 
-// DELETE /api/admin/restaurants  – delete by { id, userId }
+// DELETE — remove restaurant + auth user
 export async function DELETE(req: NextRequest) {
   if (!requireAdmin(req)) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
 
-  const { id, userId } = await req.json()
-  if (!id || !userId) return NextResponse.json({ error: 'id et userId requis' }, { status: 400 })
+  try {
+    const { id, userId } = await req.json()
+    if (!id || !userId) return NextResponse.json({ error: 'id et userId requis' }, { status: 400 })
 
-  const sb = adminSupabase()
+    const sb = adminSupabase()
+    await sb.from('restaurants').delete().eq('id', id)
+    await sb.auth.admin.deleteUser(userId)
 
-  // Delete restaurant (cascades to clients + visits via FK if set up)
-  await sb.from('restaurants').delete().eq('id', id)
-
-  // Delete auth user
-  await sb.auth.admin.deleteUser(userId)
-
-  return NextResponse.json({ ok: true })
+    return NextResponse.json({ ok: true })
+  } catch (e: any) {
+    return NextResponse.json({ error: e.message }, { status: 500 })
+  }
 }

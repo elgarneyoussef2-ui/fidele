@@ -27,8 +27,8 @@ export default function AdminLoginPage() {
       setError(data.error ?? 'Erreur de connexion.')
       setLoading(false)
     } else {
-      router.push('/admin')
-      router.refresh()
+      // Hard redirect so the cookie is included in the next request
+      window.location.href = '/admin'
     }
   }
 

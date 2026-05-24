@@ -25,11 +25,16 @@ export default function AdminPage() {
 
   async function load() {
     setLoading(true)
-    const res = await fetch('/api/admin/restaurants')
-    if (res.status === 401) { router.push('/admin/login'); return }
-    const data = await res.json()
-    setRestaurants(data)
-    setLoading(false)
+    try {
+      const res = await fetch('/api/admin/restaurants')
+      if (res.status === 401) { window.location.href = '/admin/login'; return }
+      const data = await res.json()
+      setRestaurants(Array.isArray(data) ? data : [])
+    } catch {
+      setRestaurants([])
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => { load() }, [])
