@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Users, CreditCard, Utensils, TrendingUp, QrCode } from 'lucide-react'
 import Link from 'next/link'
 import VisitsChart from '@/components/dashboard/VisitsChart'
+import DashboardNav from '@/components/dashboard/DashboardNav'
 
 export default function DashboardPage() {
   // Données simulées pour le dashboard
@@ -15,7 +16,9 @@ export default function DashboardPage() {
   ]
 
   return (
-    <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
+    <>
+    <DashboardNav />
+    <div className="p-6 space-y-6 bg-gray-50 min-h-screen max-w-7xl mx-auto">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
@@ -97,5 +100,6 @@ export default function DashboardPage() {
         </Card>
       </div>
     </div>
+    </>
   )
 }
