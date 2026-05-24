@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -13,12 +13,13 @@ import { processJoinAndCredit, checkExistingClient } from './actions'
 
 function JoinContent() {
   const searchParams = useSearchParams()
+  const router = useRouter()
   const { toast } = useToast()
   const supabase = createClient()
 
   const restaurantId = searchParams.get('restaurantId')
   const amount = searchParams.get('amount')
-  
+
   const [loading, setLoading] = useState(false)
   const [step, setStep] = useState<'phone' | 'name' | 'success'>('phone')
   const [phone, setPhone] = useState('')
@@ -26,6 +27,7 @@ function JoinContent() {
   const [restaurantName, setRestaurantName] = useState('votre restaurant')
   const [pointsEarned, setPointsEarned] = useState(0)
   const [newBalance, setNewBalance] = useState(0)
+  const [countdown, setCountdown] = useState(4)
 
   useEffect(() => {
     async function fetchRestaurant() {
@@ -112,6 +114,13 @@ function JoinContent() {
     }
   }
 
+  useEffect(() => {
+    if (step !== 'success') return
+    if (countdown <= 0) { router.push('/client'); return }
+    const t = setTimeout(() => setCountdown(c => c - 1), 1000)
+    return () => clearTimeout(t)
+  }, [step, countdown, router])
+
   if (step === 'success') {
     return (
       <Card className="border-none shadow-none text-center space-y-6 py-8">
@@ -136,10 +145,11 @@ function JoinContent() {
             <p className="text-2xl font-bold text-gray-800">{newBalance} points</p>
           </div>
         </CardContent>
-        <CardFooter>
-          <Button variant="outline" className="w-full" onClick={() => window.location.reload()}>
-            Fermer
+        <CardFooter className="flex flex-col gap-3">
+          <Button className="w-full bg-[#185FA5] hover:bg-[#124880]" onClick={() => router.push('/client')}>
+            Voir mon portefeuille →
           </Button>
+          <p className="text-xs text-gray-400">Redirection automatique dans {countdown}s…</p>
         </CardFooter>
       </Card>
     )

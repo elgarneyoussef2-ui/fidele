@@ -1,6 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, lazy, Suspense } from 'react'
+
+const ScannerScreen = lazy(() => import('./ScannerScreen'))
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -544,7 +546,7 @@ function VoucherScreen({ reward, resto, onClose }: { reward: Reward; resto: Rest
 
 // ─── Bottom tab bar (mobile) ─────────────────────────────────────────────────
 
-function TabBar({ active }: { active: 'home' | 'gifts' }) {
+function TabBar({ active, onScan }: { active: 'home' | 'gifts'; onScan: () => void }) {
   const tabs = [
     { id: 'home',    label: 'Accueil', icon: <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2h-4v-7H9v7H5a2 2 0 0 1-2-2z"/> },
     { id: 'scan',    label: 'Scanner', icon: <><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></> },
@@ -554,7 +556,7 @@ function TabBar({ active }: { active: 'home' | 'gifts' }) {
   return (
     <div className="fidele-tabbar">
       {tabs.map(t => (
-        <button key={t.id} style={{
+        <button key={t.id} onClick={t.id === 'scan' ? onScan : undefined} style={{
           flex: 1, padding: '6px 4px', background: 'none', border: 'none',
           display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
           color: active === t.id ? '#185FA5' : '#8E8E93', cursor: 'pointer',
@@ -571,7 +573,7 @@ function TabBar({ active }: { active: 'home' | 'gifts' }) {
 
 // ─── Desktop sidebar ──────────────────────────────────────────────────────────
 
-function DesktopSidebar({ active }: { active: 'home' | 'gifts' }) {
+function DesktopSidebar({ active, onScan }: { active: 'home' | 'gifts'; onScan: () => void }) {
   const navItems = [
     { id: 'home',    label: 'Accueil',  icon: <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2h-4v-7H9v7H5a2 2 0 0 1-2-2z"/> },
     { id: 'scan',    label: 'Scanner',  icon: <><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></> },
@@ -592,7 +594,7 @@ function DesktopSidebar({ active }: { active: 'home' | 'gifts' }) {
         {navItems.map(item => {
           const isActive = active === item.id
           return (
-            <button key={item.id} style={{
+            <button key={item.id} onClick={item.id === 'scan' ? onScan : undefined} style={{
               width: '100%', display: 'flex', alignItems: 'center', gap: 12,
               padding: '10px 14px', borderRadius: 12, border: 'none', marginBottom: 2,
               background: isActive ? '#185FA514' : 'transparent',
@@ -629,9 +631,10 @@ function DesktopSidebar({ active }: { active: 'home' | 'gifts' }) {
 // ─── Main app ─────────────────────────────────────────────────────────────────
 
 export default function ClientApp() {
-  const [restos,     setRestos]     = useState(INIT_RESTAURANTS)
-  const [screen,     setScreen]     = useState<{ name: 'wallet' } | { name: 'resto'; id: string }>({ name: 'wallet' })
-  const [redeemFlow, setRedeemFlow] = useState<{ step: 'confirm' | 'voucher'; reward: Reward; restoId: string } | null>(null)
+  const [restos,      setRestos]      = useState(INIT_RESTAURANTS)
+  const [screen,      setScreen]      = useState<{ name: 'wallet' } | { name: 'resto'; id: string }>({ name: 'wallet' })
+  const [redeemFlow,  setRedeemFlow]  = useState<{ step: 'confirm' | 'voucher'; reward: Reward; restoId: string } | null>(null)
+  const [showScanner, setShowScanner] = useState(false)
 
   const currentResto = screen.name === 'resto' ? restos.find(r => r.id === screen.id) : null
 
@@ -722,14 +725,20 @@ export default function ClientApp() {
       `}</style>
 
       <div className="fidele-outer">
-        <DesktopSidebar active={activeTab} />
+        <DesktopSidebar active={activeTab} onScan={() => setShowScanner(true)} />
 
         <div className="fidele-app">
           {screen.name === 'wallet' && <WalletScreen restos={restos} onOpen={openResto} />}
           {screen.name === 'resto'  && currentResto && <RestoScreen resto={currentResto} onBack={back} onRedeem={startRedeem} />}
-          <TabBar active={activeTab} />
+          <TabBar active={activeTab} onScan={() => setShowScanner(true)} />
         </div>
       </div>
+
+      {showScanner && (
+        <Suspense fallback={null}>
+          <ScannerScreen onClose={() => setShowScanner(false)} />
+        </Suspense>
+      )}
 
       {redeemFlow?.step === 'confirm' && (
         <RedeemSheet
