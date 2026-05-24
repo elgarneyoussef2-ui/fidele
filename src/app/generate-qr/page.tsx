@@ -25,7 +25,7 @@ export default function GenerateQRPage() {
       if (!user) return
       const { data } = await (supabase.from('restaurants') as any)
         .select('id')
-        .eq('user_id', user.id)
+        .eq('owner_id', user.id)
         .single()
       if (data) setRestaurantId(data.id)
     }

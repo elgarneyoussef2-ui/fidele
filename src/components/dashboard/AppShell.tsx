@@ -28,7 +28,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       // Fetch restaurant name
       const { data } = await (supabase.from('restaurants') as any)
         .select('name')
-        .eq('user_id', user.id)
+        .eq('owner_id', user.id)
         .single()
       if (data) setRestaurantName(data.name)
     }

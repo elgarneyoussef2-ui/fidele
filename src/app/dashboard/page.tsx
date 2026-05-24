@@ -29,7 +29,7 @@ export default async function DashboardPage() {
   // Restaurant du user connecté
   const { data: restaurant } = await (admin.from('restaurants') as any)
     .select('id, name')
-    .eq('user_id', user.id)
+    .eq('owner_id', user.id)
     .single()
 
   if (!restaurant) redirect('/login')
