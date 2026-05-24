@@ -18,14 +18,19 @@ export default function LoginPage() {
     setError('')
     setLoading(true)
 
-    const supabase = createClient()
-    const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
+    try {
+      const supabase = createClient()
+      const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
 
-    if (authError) {
-      setError('Email ou mot de passe incorrect.')
+      if (authError) {
+        setError(authError.message)
+        setLoading(false)
+      } else {
+        window.location.href = '/dashboard'
+      }
+    } catch (err: any) {
+      setError(err?.message ?? 'Erreur réseau. Vérifiez votre connexion.')
       setLoading(false)
-    } else {
-      window.location.href = '/dashboard'
     }
   }
 
