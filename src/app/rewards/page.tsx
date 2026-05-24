@@ -73,7 +73,7 @@ const INITIAL_TIERS: Tier[] = [
 const INITIAL_REWARDS: Reward[] = [
   { id: 1, name: 'Thé à la menthe offert',   description: 'Un verre de thé à la menthe marocaine',   points: 100,  limit: null, used: 38, active: true  },
   { id: 2, name: 'Dessert gratuit',            description: 'Choisir parmi la sélection du chef',       points: 200,  limit: 50,   used: 21, active: true  },
-  { id: 3, name: 'Réduction 15%',             description: 'Sur l'ensemble de la commande',            points: 350,  limit: null, used: 15, active: true  },
+  { id: 3, name: 'Réduction 15%',             description: "Sur l'ensemble de la commande",            points: 350,  limit: null, used: 15, active: true  },
   { id: 4, name: 'Plat principal offert',      description: 'Un tajine ou couscous au choix',           points: 500,  limit: 20,   used: 7,  active: false },
   { id: 5, name: 'Repas complet pour 2',       description: 'Entrée, plat et dessert pour 2 personnes', points: 1000, limit: 10,   used: 2,  active: true  },
 ]
