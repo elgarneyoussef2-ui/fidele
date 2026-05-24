@@ -445,8 +445,8 @@ function RewardCard({ reward, balance, accent, onRedeem }: { reward: Reward; bal
 function RedeemSheet({ reward, resto, onClose, onConfirm }: { reward: Reward; resto: Resto; onClose: () => void; onConfirm: () => void }) {
   const newBal = resto.points - reward.points
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,0,0,.4)', display: 'flex', alignItems: 'flex-end' }} onClick={onClose}>
-      <div style={{ width: '100%', background: '#fff', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: '8px 18px 40px', maxHeight: '92vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,0,0,.4)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={onClose}>
+      <div style={{ width: '100%', maxWidth: 430, background: '#fff', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: '8px 18px 40px', maxHeight: '92vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
           <div style={{ width: 40, height: 4, borderRadius: 99, background: '#D1D1D6' }} />
         </div>
@@ -494,8 +494,8 @@ function VoucherScreen({ reward, resto, onClose }: { reward: Reward; resto: Rest
   const widths = [3,1,2,1,3,2,1,1,3,1,2,3,1,2,1,3,2,1,1,2,3,1,2,1,3,1,2]
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,0,0,.4)', display: 'flex', alignItems: 'flex-end' }} onClick={onClose}>
-      <div style={{ width: '100%', background: '#fff', borderTopLeftRadius: 28, borderTopRightRadius: 28, overflow: 'hidden', maxHeight: '92vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,0,0,.4)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={onClose}>
+      <div style={{ width: '100%', maxWidth: 430, background: '#fff', borderTopLeftRadius: 28, borderTopRightRadius: 28, overflow: 'hidden', maxHeight: '92vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div style={{ background: resto.cover, color: '#fff', padding: '28px 20px 24px', position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 50% 0%, rgba(255,255,255,.2), transparent 60%)', pointerEvents: 'none' }} />
@@ -559,13 +559,7 @@ function TabBar({ active }: { active: 'home' | 'gifts' }) {
     { id: 'profile', label: 'Profil',  icon: <><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></> },
   ]
   return (
-    <div style={{
-      position: 'fixed', bottom: 0, left: 0, right: 0,
-      paddingBottom: 'env(safe-area-inset-bottom, 16px)', paddingTop: 8, paddingLeft: 8, paddingRight: 8,
-      background: 'rgba(255,255,255,.86)', backdropFilter: 'blur(20px)',
-      borderTop: '0.5px solid rgba(0,0,0,.08)',
-      display: 'flex', justifyContent: 'space-around', zIndex: 50,
-    }}>
+    <div className="fidele-tabbar">
       {tabs.map(t => (
         <button key={t.id} style={{
           flex: 1, padding: '6px 4px', background: 'none', border: 'none',
@@ -609,9 +603,42 @@ export default function ClientApp() {
         html, body { margin: 0; padding: 0; background: #F2F2F7; -webkit-font-smoothing: antialiased; }
         button { transition: transform .1s; font-family: inherit; }
         button:active { transform: scale(.97); }
+
+        .fidele-outer { min-height: 100dvh; background: #F2F2F7; }
+        .fidele-app {
+          max-width: 430px; margin: 0 auto; min-height: 100dvh;
+          font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+          position: relative; background: #F2F2F7;
+        }
+        .fidele-tabbar {
+          position: fixed; bottom: 0; left: 0; right: 0;
+          padding-bottom: env(safe-area-inset-bottom, 16px);
+          padding-top: 8px; padding-left: 8px; padding-right: 8px;
+          background: rgba(255,255,255,.86); backdrop-filter: blur(20px);
+          border-top: 0.5px solid rgba(0,0,0,.08);
+          display: flex; justify-content: space-around; z-index: 50;
+        }
+        @media (min-width: 640px) {
+          html, body { background: #D9DCE3; }
+          .fidele-outer {
+            background: #D9DCE3;
+            display: flex; justify-content: center; align-items: flex-start;
+            padding: 32px 0 80px;
+          }
+          .fidele-app {
+            border-radius: 32px; overflow: hidden;
+            box-shadow: 0 0 0 1px rgba(0,0,0,.1), 0 24px 64px rgba(0,0,0,.22);
+            min-height: auto;
+          }
+          .fidele-tabbar {
+            left: 50%; right: auto; transform: translateX(-50%);
+            width: 430px; border-radius: 0 0 32px 32px;
+          }
+        }
       `}</style>
 
-      <div style={{ minHeight: '100dvh', fontFamily: '-apple-system, BlinkMacSystemFont, system-ui, sans-serif', maxWidth: 430, margin: '0 auto' }}>
+      <div className="fidele-outer">
+      <div className="fidele-app">
         {screen.name === 'wallet' && <WalletScreen restos={restos} onOpen={openResto} />}
         {screen.name === 'resto' && currentResto && <RestoScreen resto={currentResto} onBack={back} onRedeem={startRedeem} />}
 
@@ -632,6 +659,7 @@ export default function ClientApp() {
             onClose={closeRedeem}
           />
         )}
+      </div>
       </div>
     </>
   )
