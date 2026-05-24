@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Users, CreditCard, Utensils, TrendingUp, QrCode } from 'lucide-react'
 import Link from 'next/link'
+import VisitsChart from '@/components/dashboard/VisitsChart'
 
 export default function DashboardPage() {
   // Données simulées pour le dashboard
@@ -43,6 +44,8 @@ export default function DashboardPage() {
           </Card>
         ))}
       </div>
+
+      <VisitsChart />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
