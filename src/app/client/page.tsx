@@ -90,7 +90,7 @@ const ACTIVITY: Record<string, { date: string; label: string; delta: string }[]>
   ],
 }
 
-type Resto = typeof INIT_RESTAURANTS[number]
+type Resto  = typeof INIT_RESTAURANTS[number]
 type Reward = typeof COMMON_REWARDS[number]
 
 // ─── Atoms ────────────────────────────────────────────────────────────────────
@@ -136,7 +136,7 @@ function WalletScreen({ restos, onOpen }: { restos: Resto[]; onOpen: (id: string
   const total = restos.reduce((s, r) => s + r.points, 0)
 
   return (
-    <div style={{ background: '#F2F2F7', minHeight: '100%', paddingBottom: 90 }}>
+    <div className="fidele-content" style={{ background: '#F2F2F7', minHeight: '100%' }}>
       {/* Header */}
       <div style={{ padding: '24px 20px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
@@ -182,7 +182,7 @@ function WalletScreen({ restos, onOpen }: { restos: Resto[]; onOpen: (id: string
         <div style={{ fontSize: 13, color: '#185FA5', fontWeight: 600 }}>{restos.length}</div>
       </div>
 
-      <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div className="resto-grid" style={{ padding: '0 20px' }}>
         {restos.map(r => <RestoCard key={r.id} resto={r} onClick={() => onOpen(r.id)} />)}
       </div>
 
@@ -196,7 +196,7 @@ function WalletScreen({ restos, onOpen }: { restos: Resto[]; onOpen: (id: string
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/>
           </svg>
-          Découvrir d'autres restaurants
+          Découvrir d&apos;autres restaurants
         </button>
       </div>
     </div>
@@ -249,19 +249,18 @@ function RestoCard({ resto, onClick }: { resto: Resto; onClick: () => void }) {
 // ─── Restaurant detail ────────────────────────────────────────────────────────
 
 function RestoScreen({ resto, onBack, onRedeem }: { resto: Resto; onBack: () => void; onRedeem: (r: Reward) => void }) {
-  const tier  = tierFor(resto.points)
-  const prog  = progressInTier(resto.points)
+  const tier    = tierFor(resto.points)
+  const prog    = progressInTier(resto.points)
   const [tab, setTab] = useState<'rewards' | 'activity'>('rewards')
   const rewards  = REWARDS_BY_RESTO[resto.id] || []
   const activity = ACTIVITY[resto.id] || []
 
   return (
-    <div style={{ background: '#F2F2F7', minHeight: '100%', paddingBottom: 90 }}>
+    <div className="fidele-content" style={{ background: '#F2F2F7', minHeight: '100%' }}>
       {/* Hero */}
       <div style={{ background: resto.cover, padding: '24px 20px 22px', color: '#fff', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 80% 0%, rgba(255,255,255,.14), transparent 50%)', pointerEvents: 'none' }} />
 
-        {/* Back */}
         <button onClick={onBack} style={{
           width: 36, height: 36, borderRadius: 99,
           background: 'rgba(255,255,255,.18)', backdropFilter: 'blur(20px)',
@@ -273,7 +272,6 @@ function RestoScreen({ resto, onBack, onRedeem }: { resto: Resto; onBack: () => 
           </svg>
         </button>
 
-        {/* Info resto */}
         <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 14, position: 'relative' }}>
           <div style={{
             width: 56, height: 56, borderRadius: 16,
@@ -287,7 +285,6 @@ function RestoScreen({ resto, onBack, onRedeem }: { resto: Resto; onBack: () => 
           </div>
         </div>
 
-        {/* Points + progression */}
         <div style={{
           marginTop: 20, background: 'rgba(255,255,255,.12)', backdropFilter: 'blur(24px)',
           border: '1px solid rgba(255,255,255,.18)', borderRadius: 18, padding: '16px 18px',
@@ -319,7 +316,6 @@ function RestoScreen({ resto, onBack, onRedeem }: { resto: Resto; onBack: () => 
           </div>
         </div>
 
-        {/* Quick stats */}
         <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
           {[
             { k: 'Visites',  v: resto.visits },
@@ -349,11 +345,10 @@ function RestoScreen({ resto, onBack, onRedeem }: { resto: Resto; onBack: () => 
         ))}
       </div>
 
-      {/* Tab content */}
       {tab === 'rewards' && (
         <div style={{ padding: '14px 20px 0' }}>
           <div style={{ fontSize: 12, color: '#8E8E93', marginBottom: 10 }}>Échangez vos points contre des cadeaux.</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div className="reward-grid">
             {rewards.map(r => <RewardCard key={r.id} reward={r} balance={resto.points} accent={resto.accent} onRedeem={() => onRedeem(r)} />)}
           </div>
         </div>
@@ -386,8 +381,8 @@ function RestoScreen({ resto, onBack, onRedeem }: { resto: Resto; onBack: () => 
 
 function RewardCard({ reward, balance, accent, onRedeem }: { reward: Reward; balance: number; accent: string; onRedeem: () => void }) {
   const canRedeem = balance >= reward.points
-  const missing = reward.points - balance
-  const pct = Math.min(100, Math.round((balance / reward.points) * 100))
+  const missing   = reward.points - balance
+  const pct       = Math.min(100, Math.round((balance / reward.points) * 100))
 
   return (
     <div style={{
@@ -446,7 +441,7 @@ function RedeemSheet({ reward, resto, onClose, onConfirm }: { reward: Reward; re
   const newBal = resto.points - reward.points
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,0,0,.4)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={onClose}>
-      <div style={{ width: '100%', maxWidth: 430, background: '#fff', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: '8px 18px 40px', maxHeight: '92vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
+      <div style={{ width: '100%', maxWidth: 520, background: '#fff', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: '8px 18px 40px', maxHeight: '92vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
           <div style={{ width: 40, height: 4, borderRadius: 99, background: '#D1D1D6' }} />
         </div>
@@ -457,17 +452,17 @@ function RedeemSheet({ reward, resto, onClose, onConfirm }: { reward: Reward; re
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 30, border: `1px solid ${resto.accent}22`,
           }}>{reward.icon}</div>
-          <div style={{ fontSize: 11, letterSpacing: '.12em', textTransform: 'uppercase', color: '#8E8E93', fontWeight: 600, marginTop: 14 }}>Confirmer l'échange</div>
+          <div style={{ fontSize: 11, letterSpacing: '.12em', textTransform: 'uppercase', color: '#8E8E93', fontWeight: 600, marginTop: 14 }}>Confirmer l&apos;échange</div>
           <div style={{ fontSize: 22, fontWeight: 700, color: '#0A0A0A', marginTop: 6, fontFamily: '"Source Serif 4", Georgia, serif' }}>{reward.name}</div>
           <div style={{ fontSize: 13, color: '#8E8E93', marginTop: 4 }}>chez <strong style={{ color: '#0A0A0A' }}>{resto.name}</strong></div>
         </div>
 
         <div style={{ marginTop: 18, padding: '14px 16px', borderRadius: 14, background: '#F2F2F7', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           {[
-            { label: 'Coût',         value: `−${reward.points} pts`, color: '#DC2626', weight: 600 },
-            { label: 'Solde actuel', value: `${resto.points} pts`,   color: '#0A0A0A', weight: 600 },
-            { label: 'Après échange',value: `${newBal} pts`,         color: '#0A0A0A', weight: 700 },
-            { label: 'Valide',       value: '24 heures',             color: '#0A0A0A', weight: 600 },
+            { label: 'Coût',          value: `−${reward.points} pts`, color: '#DC2626', weight: 600 },
+            { label: 'Solde actuel',  value: `${resto.points} pts`,   color: '#0A0A0A', weight: 600 },
+            { label: 'Après échange', value: `${newBal} pts`,         color: '#0A0A0A', weight: 700 },
+            { label: 'Valide',        value: '24 heures',             color: '#0A0A0A', weight: 600 },
           ].map(s => (
             <div key={s.label}>
               <div style={{ fontSize: 10, letterSpacing: '.1em', textTransform: 'uppercase', color: '#8E8E93', fontWeight: 600 }}>{s.label}</div>
@@ -477,7 +472,7 @@ function RedeemSheet({ reward, resto, onClose, onConfirm }: { reward: Reward; re
         </div>
 
         <div style={{ marginTop: 16, fontSize: 12, color: '#8E8E93', lineHeight: 1.5, textAlign: 'center' }}>
-          Présentez le code généré au serveur. L'échange est définitif une fois validé.
+          Présentez le code généré au serveur. L&apos;échange est définitif une fois validé.
         </div>
 
         <div style={{ marginTop: 16, display: 'flex', gap: 10 }}>
@@ -490,13 +485,12 @@ function RedeemSheet({ reward, resto, onClose, onConfirm }: { reward: Reward; re
 }
 
 function VoucherScreen({ reward, resto, onClose }: { reward: Reward; resto: Resto; onClose: () => void }) {
-  const code = `FID-${Math.random().toString(36).slice(2,6).toUpperCase()}-${Math.random().toString(36).slice(2,6).toUpperCase()}`
+  const code   = `FID-${Math.random().toString(36).slice(2,6).toUpperCase()}-${Math.random().toString(36).slice(2,6).toUpperCase()}`
   const widths = [3,1,2,1,3,2,1,1,3,1,2,3,1,2,1,3,2,1,1,2,3,1,2,1,3,1,2]
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,0,0,.4)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={onClose}>
-      <div style={{ width: '100%', maxWidth: 430, background: '#fff', borderTopLeftRadius: 28, borderTopRightRadius: 28, overflow: 'hidden', maxHeight: '92vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
-        {/* Header */}
+      <div style={{ width: '100%', maxWidth: 520, background: '#fff', borderTopLeftRadius: 28, borderTopRightRadius: 28, overflow: 'hidden', maxHeight: '92vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
         <div style={{ background: resto.cover, color: '#fff', padding: '28px 20px 24px', position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 50% 0%, rgba(255,255,255,.2), transparent 60%)', pointerEvents: 'none' }} />
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 14, position: 'relative' }}>
@@ -518,7 +512,6 @@ function VoucherScreen({ reward, resto, onClose }: { reward: Reward; resto: Rest
           </div>
         </div>
 
-        {/* Voucher */}
         <div style={{ padding: '20px', background: '#fff' }}>
           <div style={{
             border: '2px dashed #D1D1D6', borderRadius: 16, padding: 18,
@@ -549,7 +542,7 @@ function VoucherScreen({ reward, resto, onClose }: { reward: Reward; resto: Rest
   )
 }
 
-// ─── Bottom tab bar ────────────────────────────────────────────────────────────
+// ─── Bottom tab bar (mobile) ─────────────────────────────────────────────────
 
 function TabBar({ active }: { active: 'home' | 'gifts' }) {
   const tabs = [
@@ -576,12 +569,69 @@ function TabBar({ active }: { active: 'home' | 'gifts' }) {
   )
 }
 
+// ─── Desktop sidebar ──────────────────────────────────────────────────────────
+
+function DesktopSidebar({ active }: { active: 'home' | 'gifts' }) {
+  const navItems = [
+    { id: 'home',    label: 'Accueil',  icon: <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2h-4v-7H9v7H5a2 2 0 0 1-2-2z"/> },
+    { id: 'scan',    label: 'Scanner',  icon: <><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></> },
+    { id: 'gifts',   label: 'Cadeaux',  icon: <><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></> },
+    { id: 'profile', label: 'Profil',   icon: <><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></> },
+  ]
+
+  return (
+    <div className="fidele-sidebar">
+      {/* Logo */}
+      <div style={{ padding: '28px 24px 20px', borderBottom: '1px solid #F2F2F7' }}>
+        <div style={{ fontSize: 22, fontWeight: 700, color: '#0A0A0A', fontFamily: '"Source Serif 4", Georgia, serif', letterSpacing: '-.01em' }}>Taghra</div>
+        <div style={{ fontSize: 12, color: '#8E8E93', marginTop: 2, fontWeight: 500 }}>Portefeuille fidélité</div>
+      </div>
+
+      {/* Nav */}
+      <nav style={{ padding: '16px 12px', flex: 1 }}>
+        {navItems.map(item => {
+          const isActive = active === item.id
+          return (
+            <button key={item.id} style={{
+              width: '100%', display: 'flex', alignItems: 'center', gap: 12,
+              padding: '10px 14px', borderRadius: 12, border: 'none', marginBottom: 2,
+              background: isActive ? '#185FA514' : 'transparent',
+              color: isActive ? '#185FA5' : '#6B7280',
+              fontWeight: isActive ? 600 : 500, fontSize: 14, cursor: 'pointer',
+              textAlign: 'left',
+            }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                {item.icon}
+              </svg>
+              {item.label}
+            </button>
+          )
+        })}
+      </nav>
+
+      {/* User */}
+      <div style={{ padding: '16px 20px', borderTop: '1px solid #F2F2F7', display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{
+          width: 36, height: 36, borderRadius: 99, flexShrink: 0,
+          background: 'linear-gradient(135deg, #185FA5, #0F4C75)', color: '#fff',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontWeight: 700, fontSize: 13,
+        }}>YI</div>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: '#0A0A0A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Yassine</div>
+          <div style={{ fontSize: 12, color: '#8E8E93' }}>Client fidèle</div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Main app ─────────────────────────────────────────────────────────────────
 
 export default function ClientApp() {
-  const [restos,      setRestos]      = useState(INIT_RESTAURANTS)
-  const [screen,      setScreen]      = useState<{ name: 'wallet' } | { name: 'resto'; id: string }>({ name: 'wallet' })
-  const [redeemFlow,  setRedeemFlow]  = useState<{ step: 'confirm' | 'voucher'; reward: Reward; restoId: string } | null>(null)
+  const [restos,     setRestos]     = useState(INIT_RESTAURANTS)
+  const [screen,     setScreen]     = useState<{ name: 'wallet' } | { name: 'resto'; id: string }>({ name: 'wallet' })
+  const [redeemFlow, setRedeemFlow] = useState<{ step: 'confirm' | 'voucher'; reward: Reward; restoId: string } | null>(null)
 
   const currentResto = screen.name === 'resto' ? restos.find(r => r.id === screen.id) : null
 
@@ -595,6 +645,8 @@ export default function ClientApp() {
   }
   function closeRedeem() { setRedeemFlow(null) }
 
+  const activeTab = screen.name === 'wallet' ? 'home' : 'gifts'
+
   return (
     <>
       <style>{`
@@ -604,12 +656,19 @@ export default function ClientApp() {
         button { transition: transform .1s; font-family: inherit; }
         button:active { transform: scale(.97); }
 
-        .fidele-outer { min-height: 100dvh; background: #F2F2F7; }
-        .fidele-app {
-          max-width: 430px; margin: 0 auto; min-height: 100dvh;
-          font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-          position: relative; background: #F2F2F7;
-        }
+        /* ── Layout shells ── */
+        .fidele-outer  { display: flex; flex-direction: row; min-height: 100dvh; }
+        .fidele-sidebar { display: none; }
+        .fidele-app    { flex: 1; min-width: 0; font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif; }
+
+        /* ── Content padding (accounts for bottom tabbar on mobile) ── */
+        .fidele-content { padding-bottom: 90px; }
+
+        /* ── Grids: single column on mobile ── */
+        .resto-grid  { display: flex; flex-direction: column; gap: 12px; }
+        .reward-grid { display: flex; flex-direction: column; gap: 10px; }
+
+        /* ── Bottom tabbar (mobile only) ── */
         .fidele-tabbar {
           position: fixed; bottom: 0; left: 0; right: 0;
           padding-bottom: env(safe-area-inset-bottom, 16px);
@@ -618,49 +677,75 @@ export default function ClientApp() {
           border-top: 0.5px solid rgba(0,0,0,.08);
           display: flex; justify-content: space-around; z-index: 50;
         }
+
+        /* ── Tablet (≥ 640px) ── */
         @media (min-width: 640px) {
-          html, body { background: #D9DCE3; }
+          .resto-grid  { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+          .reward-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        }
+
+        /* ── Desktop (≥ 1024px) ── */
+        @media (min-width: 1024px) {
+          html, body { background: #EAECF0; }
+
           .fidele-outer {
-            background: #D9DCE3;
-            display: flex; justify-content: center; align-items: flex-start;
-            padding: 32px 0 80px;
+            background: #EAECF0;
+            max-width: 1400px;
+            margin: 0 auto;
           }
+
+          .fidele-sidebar {
+            display: flex; flex-direction: column;
+            width: 260px; flex-shrink: 0;
+            background: #fff;
+            border-right: 1px solid rgba(0,0,0,.06);
+            position: sticky; top: 0; height: 100dvh;
+            overflow-y: auto;
+          }
+
           .fidele-app {
-            border-radius: 32px; overflow: hidden;
-            box-shadow: 0 0 0 1px rgba(0,0,0,.1), 0 24px 64px rgba(0,0,0,.22);
-            min-height: auto;
+            background: #F2F2F7;
           }
-          .fidele-tabbar {
-            left: 50%; right: auto; transform: translateX(-50%);
-            width: 430px; border-radius: 0 0 32px 32px;
-          }
+
+          .fidele-tabbar { display: none; }
+
+          .fidele-content { padding-bottom: 48px; }
+
+          .reward-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+
+        /* ── Wide desktop (≥ 1280px) ── */
+        @media (min-width: 1280px) {
+          .fidele-sidebar { width: 280px; }
+          .resto-grid     { grid-template-columns: repeat(3, 1fr); }
         }
       `}</style>
 
       <div className="fidele-outer">
-      <div className="fidele-app">
-        {screen.name === 'wallet' && <WalletScreen restos={restos} onOpen={openResto} />}
-        {screen.name === 'resto' && currentResto && <RestoScreen resto={currentResto} onBack={back} onRedeem={startRedeem} />}
+        <DesktopSidebar active={activeTab} />
 
-        <TabBar active={screen.name === 'wallet' ? 'home' : 'gifts'} />
+        <div className="fidele-app">
+          {screen.name === 'wallet' && <WalletScreen restos={restos} onOpen={openResto} />}
+          {screen.name === 'resto'  && currentResto && <RestoScreen resto={currentResto} onBack={back} onRedeem={startRedeem} />}
+          <TabBar active={activeTab} />
+        </div>
+      </div>
 
-        {redeemFlow?.step === 'confirm' && (
-          <RedeemSheet
-            reward={redeemFlow.reward}
-            resto={restos.find(r => r.id === redeemFlow.restoId)!}
-            onClose={closeRedeem}
-            onConfirm={confirmRedeem}
-          />
-        )}
-        {redeemFlow?.step === 'voucher' && (
-          <VoucherScreen
-            reward={redeemFlow.reward}
-            resto={restos.find(r => r.id === redeemFlow.restoId)!}
-            onClose={closeRedeem}
-          />
-        )}
-      </div>
-      </div>
+      {redeemFlow?.step === 'confirm' && (
+        <RedeemSheet
+          reward={redeemFlow.reward}
+          resto={restos.find(r => r.id === redeemFlow.restoId)!}
+          onClose={closeRedeem}
+          onConfirm={confirmRedeem}
+        />
+      )}
+      {redeemFlow?.step === 'voucher' && (
+        <VoucherScreen
+          reward={redeemFlow.reward}
+          resto={restos.find(r => r.id === redeemFlow.restoId)!}
+          onClose={closeRedeem}
+        />
+      )}
     </>
   )
 }
