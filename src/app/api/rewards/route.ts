@@ -1,0 +1,38 @@
+import { createAdminClient } from '@/lib/supabase/server'
+import { NextResponse } from 'next/server'
+
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url)
+  const restaurantId = searchParams.get('restaurantId')
+  const admin = await createAdminClient()
+
+  let query = (admin.from('rewards') as any)
+    .select('*')
+    .eq('active', true)
+    .order('points_cost', { ascending: true })
+
+  if (restaurantId) query = query.eq('restaurant_id', restaurantId)
+
+  const { data, error } = await query
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json(data ?? [])
+}
+
+export async function POST(req: Request) {
+  const body = await req.json()
+  const { name, description, points_cost, active } = body
+  if (!name || !points_cost) return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
+
+  const admin = await createAdminClient()
+
+  const { data: restaurant } = await (admin.from('restaurants') as any)
+    .select('id').order('created_at', { ascending: true }).limit(1).single()
+  if (!restaurant) return NextResponse.json({ error: 'No restaurant' }, { status: 404 })
+
+  const { data, error } = await (admin.from('rewards') as any)
+    .insert({ restaurant_id: restaurant.id, name, description: description ?? '', points_cost: Number(points_cost), active: active ?? true })
+    .select().single()
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json(data)
+}

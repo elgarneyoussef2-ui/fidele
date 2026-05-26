@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Users, CreditCard, Utensils, TrendingUp } from 'lucide-react'
 import VisitsChart from '@/components/dashboard/VisitsChart'
 import AppShell from '@/components/dashboard/AppShell'
+import RedemptionPanel from '@/components/dashboard/RedemptionPanel'
 
 function fmt(n: number) {
   return n.toLocaleString('fr-FR')
@@ -96,6 +97,8 @@ export default async function DashboardPage() {
             </Card>
           ))}
         </div>
+
+        <RedemptionPanel />
 
         <VisitsChart />
 

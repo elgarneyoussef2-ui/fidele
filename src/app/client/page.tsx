@@ -19,6 +19,7 @@ type ClientRecord = {
   restaurants: { id: string; name: string }
   visits: Visit[]
 }
+type Reward = { id: string; name: string; description: string; points_cost: number; active: boolean }
 
 // ─── Tier helpers ─────────────────────────────────────────────────────────────
 
@@ -70,7 +71,7 @@ function TierBadge({ points }: { points: number }) {
   )
 }
 
-// ─── Welcome / scan prompt ────────────────────────────────────────────────────
+// ─── Welcome ─────────────────────────────────────────────────────────────────
 
 function WelcomeScreen({ onScan }: { onScan: () => void }) {
   return (
@@ -86,14 +87,11 @@ function WelcomeScreen({ onScan }: { onScan: () => void }) {
         </svg>
         Scanner un QR code
       </button>
-      <div style={{ marginTop: 16, fontSize: 12, color: '#C7C7CC' }}>
-        Votre historique apparaîtra ici après votre première visite.
-      </div>
     </div>
   )
 }
 
-// ─── Wallet screen ────────────────────────────────────────────────────────────
+// ─── Wallet ───────────────────────────────────────────────────────────────────
 
 function WalletScreen({ clients, clientName, onOpen }: { clients: ClientRecord[]; clientName: string; onOpen: (id: string) => void }) {
   const total = clients.reduce((s, c) => s + (c.points_balance || 0), 0)
@@ -110,15 +108,12 @@ function WalletScreen({ clients, clientName, onOpen }: { clients: ClientRecord[]
         </div>
       </div>
 
-      {/* Hero */}
       <div style={{ padding: '8px 20px 0' }}>
         <div style={{ background: 'linear-gradient(135deg, #0F2A5C 0%, #185FA5 55%, #2A75C2 100%)', borderRadius: 24, padding: '22px 22px 20px', color: '#fff', position: 'relative', overflow: 'hidden', boxShadow: '0 24px 36px -16px rgba(24,95,165,.4)' }}>
           <div style={{ position: 'absolute', right: -40, top: -40, width: 140, height: 140, borderRadius: 99, background: 'radial-gradient(circle, #F2C84B 0%, transparent 70%)', opacity: .35, pointerEvents: 'none' }} />
           <div style={{ fontSize: 11, letterSpacing: '.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,.65)', fontWeight: 600 }}>Portefeuille fidélité</div>
           <div style={{ marginTop: 10, display: 'flex', alignItems: 'baseline', gap: 10 }}>
-            <div style={{ fontSize: 52, fontWeight: 700, lineHeight: 1, fontFamily: '"Source Serif 4", Georgia, serif', letterSpacing: '-.02em' }}>
-              {total.toLocaleString('fr-FR')}
-            </div>
+            <div style={{ fontSize: 52, fontWeight: 700, lineHeight: 1, fontFamily: '"Source Serif 4", Georgia, serif', letterSpacing: '-.02em' }}>{total.toLocaleString('fr-FR')}</div>
             <div style={{ fontSize: 14, color: 'rgba(255,255,255,.7)', fontWeight: 500 }}>points</div>
           </div>
           <div style={{ marginTop: 6, fontSize: 13, color: 'rgba(255,255,255,.7)' }}>
@@ -174,10 +169,41 @@ function RestoCard({ client, onClick }: { client: ClientRecord; onClick: () => v
 
 // ─── Restaurant detail ────────────────────────────────────────────────────────
 
-function RestoScreen({ client, onBack }: { client: ClientRecord; onBack: () => void }) {
+function RestoScreen({ client, clientName, onBack }: { client: ClientRecord; clientName: string; onBack: () => void }) {
   const tier = tierFor(client.points_balance)
   const prog = progressInTier(client.points_balance)
   const name = client.restaurants?.name ?? '—'
+
+  const [rewards,    setRewards]    = useState<Reward[]>([])
+  const [confirming, setConfirming] = useState<Reward | null>(null)
+  const [sent,       setSent]       = useState<Set<string>>(new Set())
+  const [sending,    setSending]    = useState(false)
+
+  useEffect(() => {
+    fetch(`/api/rewards?restaurantId=${client.restaurant_id}`)
+      .then(r => r.json())
+      .then(data => setRewards(Array.isArray(data) ? data : []))
+      .catch(() => {})
+  }, [client.restaurant_id])
+
+  async function requestReward(reward: Reward) {
+    setSending(true)
+    await fetch('/api/redemption', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        clientId:     client.id,
+        restaurantId: client.restaurant_id,
+        rewardId:     reward.id,
+        rewardName:   reward.name,
+        rewardPoints: reward.points_cost,
+        clientName:   clientName,
+      }),
+    })
+    setSent(prev => new Set(prev).add(reward.id))
+    setConfirming(null)
+    setSending(false)
+  }
 
   return (
     <div className="fidele-content" style={{ background: '#F2F2F7', minHeight: '100%' }}>
@@ -221,7 +247,39 @@ function RestoScreen({ client, onBack }: { client: ClientRecord; onBack: () => v
         </div>
       </div>
 
-      {/* Activity */}
+      {/* Rewards */}
+      {rewards.length > 0 && (
+        <div style={{ padding: '20px 20px 0' }}>
+          <div style={{ fontSize: 16, fontWeight: 700, color: '#0A0A0A', marginBottom: 12 }}>Récompenses disponibles</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {rewards.map(reward => {
+              const canAfford = client.points_balance >= reward.points_cost
+              const isSent    = sent.has(reward.id)
+              return (
+                <div key={reward.id} style={{ background: '#fff', borderRadius: 16, padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, boxShadow: '0 1px 2px rgba(0,0,0,.04)', opacity: canAfford ? 1 : 0.6 }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#0A0A0A' }}>{reward.name}</div>
+                    {reward.description && <div style={{ fontSize: 12, color: '#8E8E93', marginTop: 2 }}>{reward.description}</div>}
+                    <div style={{ fontSize: 12, color: '#185FA5', fontWeight: 600, marginTop: 4 }}>{reward.points_cost} pts</div>
+                  </div>
+                  {isSent ? (
+                    <span style={{ fontSize: 12, color: '#16A34A', fontWeight: 600, whiteSpace: 'nowrap', background: '#F0FDF4', padding: '6px 12px', borderRadius: 99 }}>Envoyée ✓</span>
+                  ) : (
+                    <button
+                      onClick={() => canAfford && setConfirming(reward)}
+                      disabled={!canAfford}
+                      style={{ background: canAfford ? '#185FA5' : '#E5E7EB', color: canAfford ? '#fff' : '#9CA3AF', border: 'none', borderRadius: 12, padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: canAfford ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                      {canAfford ? 'Utiliser' : 'Insuffisant'}
+                    </button>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Visits */}
       <div style={{ padding: '20px' }}>
         <div style={{ fontSize: 16, fontWeight: 700, color: '#0A0A0A', marginBottom: 12 }}>Historique des visites</div>
         {(client.visits ?? []).length === 0 ? (
@@ -240,6 +298,26 @@ function RestoScreen({ client, onBack }: { client: ClientRecord; onBack: () => v
           </div>
         )}
       </div>
+
+      {/* Confirm modal */}
+      {confirming && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', zIndex: 100, padding: '0 0 24px' }}>
+          <div style={{ background: '#fff', borderRadius: 24, padding: '24px', width: '100%', maxWidth: 400, margin: '0 16px', textAlign: 'center' }}>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>🎁</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: '#0A0A0A', marginBottom: 6 }}>{confirming.name}</div>
+            <div style={{ fontSize: 14, color: '#8E8E93', marginBottom: 20 }}>
+              Utiliser <strong style={{ color: '#185FA5' }}>{confirming.points_cost} pts</strong> pour cette récompense ?<br />
+              Le restaurant devra valider votre demande.
+            </div>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button onClick={() => setConfirming(null)} style={{ flex: 1, padding: '12px', borderRadius: 14, border: '1px solid #E5E7EB', background: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer', color: '#6B7280' }}>Annuler</button>
+              <button onClick={() => requestReward(confirming)} disabled={sending} style={{ flex: 1, padding: '12px', borderRadius: 14, border: 'none', background: '#185FA5', color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
+                {sending ? '…' : 'Confirmer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -248,9 +326,8 @@ function RestoScreen({ client, onBack }: { client: ClientRecord; onBack: () => v
 
 function TabBar({ active, onScan }: { active: 'home' | 'resto'; onScan: () => void }) {
   const tabs = [
-    { id: 'home',    label: 'Accueil', icon: <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2h-4v-7H9v7H5a2 2 0 0 1-2-2z"/> },
-    { id: 'scan',    label: 'Scanner', icon: <><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></> },
-    { id: 'profile', label: 'Profil',  icon: <><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></> },
+    { id: 'home', label: 'Accueil', icon: <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2h-4v-7H9v7H5a2 2 0 0 1-2-2z"/> },
+    { id: 'scan', label: 'Scanner', icon: <><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></> },
   ]
   return (
     <div className="fidele-tabbar">
@@ -268,7 +345,6 @@ function DesktopSidebar({ active, onScan }: { active: 'home' | 'resto'; onScan: 
   const items = [
     { id: 'home', label: 'Accueil',  icon: <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2h-4v-7H9v7H5a2 2 0 0 1-2-2z"/> },
     { id: 'scan', label: 'Scanner',  icon: <><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></> },
-    { id: 'profile', label: 'Profil', icon: <><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></> },
   ]
   return (
     <div className="fidele-sidebar">
@@ -292,12 +368,12 @@ function DesktopSidebar({ active, onScan }: { active: 'home' | 'resto'; onScan: 
 
 export default function ClientApp() {
   const router = useRouter()
-  const [clients,      setClients]      = useState<ClientRecord[]>([])
-  const [clientName,   setClientName]   = useState('')
-  const [screen,       setScreen]       = useState<{ name: 'wallet' } | { name: 'resto'; id: string }>({ name: 'wallet' })
-  const [showScanner,  setShowScanner]  = useState(false)
-  const [loading,      setLoading]      = useState(true)
-  const [hasPhone,     setHasPhone]     = useState(false)
+  const [clients,     setClients]     = useState<ClientRecord[]>([])
+  const [clientName,  setClientName]  = useState('')
+  const [screen,      setScreen]      = useState<{ name: 'wallet' } | { name: 'resto'; id: string }>({ name: 'wallet' })
+  const [showScanner, setShowScanner] = useState(false)
+  const [loading,     setLoading]     = useState(true)
+  const [hasPhone,    setHasPhone]    = useState(false)
 
   useEffect(() => {
     const phone = localStorage.getItem('taghra_client_phone')
@@ -308,10 +384,7 @@ export default function ClientApp() {
 
     fetch(`/api/client/data?phone=${encodeURIComponent(phone)}`)
       .then(r => r.json())
-      .then((data: ClientRecord[]) => {
-        setClients(Array.isArray(data) ? data : [])
-        setLoading(false)
-      })
+      .then((data: ClientRecord[]) => { setClients(Array.isArray(data) ? data : []); setLoading(false) })
       .catch(() => setLoading(false))
   }, [])
 
@@ -382,7 +455,7 @@ export default function ClientApp() {
         <DesktopSidebar active={activeTab} onScan={() => setShowScanner(true)} />
         <div className="fidele-app">
           {screen.name === 'wallet' && <WalletScreen clients={clients} clientName={clientName} onOpen={id => setScreen({ name: 'resto', id })} />}
-          {screen.name === 'resto'  && currentClient && <RestoScreen client={currentClient} onBack={() => setScreen({ name: 'wallet' })} />}
+          {screen.name === 'resto'  && currentClient && <RestoScreen client={currentClient} clientName={clientName} onBack={() => setScreen({ name: 'wallet' })} />}
           <TabBar active={activeTab} onScan={() => setShowScanner(true)} />
         </div>
       </div>

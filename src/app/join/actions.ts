@@ -2,98 +2,64 @@
 
 import { createAdminClient } from '@/lib/supabase/server'
 
-export async function processJoinAndCredit(input: {
-  restaurantId: string
-  phone: string
-  name: string
-  amount: number
-}) {
-  const { restaurantId, phone, name, amount } = input
-  const supabase = await createAdminClient()
+export async function getTokenData(token: string) {
+  const admin = await createAdminClient()
+  const { data } = await (admin.from('qr_tokens') as any)
+    .select('id, amount, used_at, restaurant_id, restaurants(name)')
+    .eq('id', token)
+    .single()
+  return data as { id: string; amount: number; used_at: string | null; restaurant_id: string; restaurants: { name: string } } | null
+}
+
+export async function processJoinWithToken(input: { token: string; phone: string; name: string }) {
+  const { token, phone, name } = input
+  const admin = await createAdminClient()
+
+  const { data: qrToken } = await (admin.from('qr_tokens') as any)
+    .select('*').eq('id', token).single()
+
+  if (!qrToken) return { success: false, error: 'QR invalide' }
+  if (qrToken.used_at) return { success: false, error: 'QR déjà utilisé' }
+
+  const restaurantId = qrToken.restaurant_id
+  const amount       = Number(qrToken.amount)
 
   try {
-    // 1. Chercher le client existant
-    const { data: existingClient } = await (supabase.from('clients') as any)
-      .select('*')
-      .eq('phone', phone)
-      .eq('restaurant_id', restaurantId)
-      .maybeSingle()
+    const { data: existing } = await (admin.from('clients') as any)
+      .select('*').eq('phone', phone).eq('restaurant_id', restaurantId).maybeSingle()
 
-    let currentClient = existingClient
-
-    if (!existingClient) {
-      // Créer nouveau client si n'existe pas
-      const { data: newClient, error: createError } = await (supabase.from('clients') as any)
-        .insert({
-          restaurant_id: restaurantId,
-          name: name,
-          phone: phone,
-          points_balance: 0,
-          total_visits: 0,
-          total_spent: 0
-        })
-        .select()
-        .single()
-
-      if (createError) throw createError
+    let currentClient = existing
+    if (!existing) {
+      const { data: newClient, error: ce } = await (admin.from('clients') as any)
+        .insert({ restaurant_id: restaurantId, name, phone, points_balance: 0, total_visits: 0, total_spent: 0 })
+        .select().single()
+      if (ce) throw ce
       currentClient = newClient
     }
 
-    // 2. Calculer les points (10 points pour 100 MAD par défaut)
-    const pointsToEarn = Math.max(0, Math.floor(amount / 10))
-    if (pointsToEarn === 0 && amount > 0) {
-      // Optionnel : donner au moins 1 point si le montant est petit mais > 0
-    }
-
-    const oldBalance = Number(currentClient.points_balance) || 0
+    const pointsToEarn  = Math.max(0, Math.floor(amount / 10))
+    const oldBalance    = Number(currentClient.points_balance) || 0
     const updatedBalance = oldBalance + pointsToEarn
 
-    // 3. Enregistrer la visite (permet plusieurs visites avec le même lien)
-    const { error: visitError } = await (supabase.from('visits') as any).insert({
-      client_id: currentClient.id,
-      restaurant_id: restaurantId,
-      amount_paid: amount,
-      points_earned: pointsToEarn
+    const { error: ve } = await (admin.from('visits') as any).insert({
+      client_id: currentClient.id, restaurant_id: restaurantId,
+      amount_paid: amount, points_earned: pointsToEarn,
     })
+    if (ve) throw ve
 
-    if (visitError) throw visitError
+    await (admin.from('clients') as any).update({
+      points_balance: updatedBalance,
+      total_visits:   (Number(currentClient.total_visits) || 0) + 1,
+      total_spent:    (Number(currentClient.total_spent)  || 0) + amount,
+      last_visit_at:  new Date().toISOString(),
+    }).eq('id', currentClient.id)
 
-    // 4. Mettre à jour le solde du client
-    const { error: updateError } = await (supabase.from('clients') as any)
-      .update({
-        points_balance: updatedBalance,
-        total_visits: (Number(currentClient.total_visits) || 0) + 1,
-        total_spent: (Number(currentClient.total_spent) || 0) + amount,
-        last_visit_at: new Date().toISOString()
-      })
-      .eq('id', currentClient.id)
+    // Mark token as used
+    await (admin.from('qr_tokens') as any)
+      .update({ used_at: new Date().toISOString() }).eq('id', token)
 
-    if (updateError) throw updateError
-
-    return {
-      success: true,
-      pointsEarned: pointsToEarn,
-      newBalance: updatedBalance,
-      name: currentClient.name
-    }
-  } catch (error: any) {
-    console.error('Erreur Action processJoinAndCredit:', error)
-    return { success: false, error: error.message }
-  }
-}
-
-export async function checkExistingClient(phone: string, restaurantId: string) {
-  const supabase = await createAdminClient()
-
-  try {
-    const { data: client } = await (supabase.from('clients') as any)
-      .select('*')
-      .eq('phone', phone)
-      .eq('restaurant_id', restaurantId)
-      .single()
-
-    return { client }
-  } catch (error) {
-    return { client: null }
+    return { success: true, pointsEarned: pointsToEarn, newBalance: updatedBalance, name: currentClient.name }
+  } catch (err: any) {
+    return { success: false, error: err.message }
   }
 }
