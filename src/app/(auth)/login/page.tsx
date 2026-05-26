@@ -5,6 +5,7 @@ import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { createBrowserClient } from '@supabase/ssr'
 
 export default function LoginPage() {
   const [email,    setEmail]    = useState('')
@@ -17,25 +18,22 @@ export default function LoginPage() {
     setError('')
     setLoading(true)
 
-    try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-        credentials: 'include',
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        setError(data.error ?? 'Identifiants incorrects.')
-        setLoading(false)
-      } else {
-        // Rechargement complet pour que le middleware lise les cookies de session
-        window.location.href = '/dashboard'
-      }
-    } catch {
-      setError('Erreur réseau. Vérifiez votre connexion.')
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+
+    const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
+
+    if (authError) {
+      setError(authError.message)
       setLoading(false)
+      return
     }
+
+    // Token stocké dans document.cookie par createBrowserClient
+    // Full reload pour que le middleware lise les cookies
+    window.location.href = '/dashboard'
   }
 
   return (
