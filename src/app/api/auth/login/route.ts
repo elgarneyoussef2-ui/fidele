@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     {
       cookies: {
         getAll: () => req.cookies.getAll(),
-        setAll: (cookies) => {
+        setAll: (cookies: { name: string; value: string; options?: Record<string, unknown> }[]) => {
           cookies.forEach(({ name, value, options }) => {
             response.cookies.set(name, value, options as any)
           })
