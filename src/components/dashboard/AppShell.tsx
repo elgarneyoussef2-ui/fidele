@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { LayoutDashboard, Gift, QrCode } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Logomark } from '@/components/brand/Logomark'
 
 const NAV = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -31,8 +32,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* ── Sidebar desktop ── */}
       <aside className="hidden md:flex flex-col w-56 bg-card border-r shrink-0">
-        <div className="h-14 flex items-center px-5 border-b">
-          <span className="wordmark text-2xl tracking-tight text-foreground">
+        <div className="h-14 flex items-center gap-2.5 px-5 border-b">
+          <Logomark size={28} className="text-primary" />
+          <span className="wordmark text-2xl text-foreground">
             Fid<span className="accent">è</span>le
           </span>
         </div>
@@ -72,7 +74,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <div className="flex-1 flex flex-col overflow-hidden">
 
         {/* Mobile top bar */}
-        <header className="md:hidden h-14 bg-card border-b flex items-center px-4 shrink-0">
+        <header className="md:hidden h-14 bg-card border-b flex items-center gap-2.5 px-4 shrink-0">
+          <Logomark size={24} className="text-primary" />
           <span className="wordmark text-xl text-foreground">
             Fid<span className="accent">è</span>le
           </span>

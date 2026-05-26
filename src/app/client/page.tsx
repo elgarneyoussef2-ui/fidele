@@ -169,81 +169,97 @@ function TabBar({ onScan, isHome }: { onScan: () => void; isHome: boolean }) {
 
 // ─── Welcome (no phone stored) ────────────────────────────────────────────────
 
-function WelcomeScreen({ onScan, onPhoneLogin }: { onScan: () => void; onPhoneLogin: (phone: string) => void }) {
-  const [phone, setPhone] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [err, setErr] = useState('')
+function WelcomeScreen({ onScan, onPhoneLogin }: { onScan: () => void; onPhoneLogin: (phone: string, name: string) => void }) {
+  const [step,     setStep]     = useState<'phone' | 'password'>('phone')
+  const [phone,    setPhone]    = useState('')
+  const [password, setPassword] = useState('')
+  const [busy,     setBusy]     = useState(false)
+  const [err,      setErr]      = useState('')
 
   async function handlePhone(e: React.FormEvent) {
     e.preventDefault()
-    const p = phone.trim()
-    if (!p) return
+    const p = phone.trim(); if (!p) return
     setBusy(true); setErr('')
     try {
-      const res = await fetch('/api/client/data', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: p }),
-      })
+      const res  = await fetch('/api/client/data', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone: p }) })
       const data = await res.json()
-      if (!Array.isArray(data) || data.length === 0) {
-        setErr('Aucun compte trouvé pour ce numéro. Scannez un QR code pour créer votre compte.')
-      } else {
-        onPhoneLogin(p)
-      }
-    } catch {
-      setErr('Erreur réseau, réessayez.')
-    } finally {
-      setBusy(false)
-    }
+      if (!Array.isArray(data) || data.length === 0) setErr('Aucun compte trouvé. Scannez un QR code pour créer votre compte.')
+      else setStep('password')
+    } catch { setErr('Erreur réseau, réessayez.') }
+    finally   { setBusy(false) }
   }
+
+  async function handlePassword(e: React.FormEvent) {
+    e.preventDefault()
+    setBusy(true); setErr('')
+    try {
+      const res  = await fetch('/api/client/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone: phone.trim(), password }) })
+      const data = await res.json()
+      if (!res.ok) { setErr(data.error ?? 'Mot de passe incorrect.'); return }
+      onPhoneLogin(phone.trim(), data.name ?? '')
+    } catch { setErr('Erreur réseau, réessayez.') }
+    finally   { setBusy(false) }
+  }
+
+  const inputSt: React.CSSProperties = { width: '100%', border: '1.5px solid rgba(21,16,31,.14)', borderRadius: 16, padding: '14px 18px', fontSize: 18, fontFamily: 'inherit', outline: 'none', background: '#fff', color: '#15101F' }
+  const btnSt   = (off: boolean): React.CSSProperties => ({ background: '#5B21B6', color: '#fff', borderRadius: 16, padding: '14px 20px', fontSize: 16, fontWeight: 700, opacity: off ? .4 : 1, transition: 'all .2s', whiteSpace: 'nowrap' as const, flexShrink: 0 })
 
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 28px', background: '#F6F1E7' }}>
-      <div style={{ width: 100, height: 100, borderRadius: 32, background: 'linear-gradient(135deg,#5B21B6,#3F1685)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 32, boxShadow: '0 20px 48px -8px rgba(91,33,182,.4)', border: '1px solid rgba(255,255,255,.1)' }}>
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+      <div style={{ width: 80, height: 80, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 28, color: '#5B21B6' }}>
+        <svg viewBox="0 0 100 100" width="80" height="80" aria-label="Fidèle">
+          <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" strokeWidth="3" />
+          <circle cx="50" cy="50" r="11" fill="currentColor" />
         </svg>
       </div>
-      <h1 className="hero-display text-center mb-4">
-        Fid<span className="accent">è</span>le
-      </h1>
-      <p style={{ fontSize: 16, color: 'var(--fidele-ink-2)', opacity: 0.6, lineHeight: 1.6, maxWidth: 280, marginBottom: 40, textAlign: 'center' }}>
-        Accédez à votre portefeuille fidélité et profitez de vos récompenses.
+      <h1 className="hero-display text-center mb-3">Fid<span className="accent">è</span>le</h1>
+      <p style={{ fontSize: 15, color: 'var(--fidele-ink-2)', opacity: .55, lineHeight: 1.6, maxWidth: 260, marginBottom: 40, textAlign: 'center' }}>
+        {step === 'phone' ? 'Accédez à votre portefeuille fidélité.' : 'Entrez votre mot de passe pour continuer.'}
       </p>
 
-      {/* Phone login */}
-      <form onSubmit={handlePhone} style={{ width: '100%', maxWidth: 340, marginBottom: 24 }}>
-        <p className="eyebrow" style={{ fontSize: 10, color: '#5B21B6', marginBottom: 10 }}>J'ai déjà un compte</p>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <input
-            type="tel" placeholder="Ex: 0612345678" value={phone}
-            onChange={e => { setPhone(e.target.value); setErr('') }}
-            disabled={busy}
-            className="num-mono"
-            style={{ flex: 1, border: '1.5px solid rgba(21, 16, 31, 0.14)', borderRadius: 16, padding: '14px 18px', fontSize: 18, fontFamily: 'inherit', outline: 'none', background: '#fff', color: '#15101F' }}
-          />
-          <button type="submit" disabled={busy || !phone.trim()} style={{ background: '#5B21B6', color: '#fff', borderRadius: 16, padding: '14px 20px', fontSize: 16, fontWeight: 700, opacity: (!phone.trim() || busy) ? .5 : 1, transition: 'all 0.2s' }}>
-            {busy ? '…' : '→'}
+      {step === 'phone' ? (
+        <>
+          <form onSubmit={handlePhone} style={{ width: '100%', maxWidth: 340, marginBottom: 24 }}>
+            <p className="eyebrow" style={{ fontSize: 10, color: '#5B21B6', marginBottom: 10 }}>J'ai déjà un compte</p>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <input type="tel" placeholder="Ex: 0612345678" value={phone} onChange={e => { setPhone(e.target.value); setErr('') }}
+                disabled={busy} className="num-mono" style={inputSt} />
+              <button type="submit" disabled={busy || !phone.trim()} style={btnSt(busy || !phone.trim())}>
+                {busy ? '…' : '→'}
+              </button>
+            </div>
+            {err && <p style={{ fontSize: 13, color: '#EF4444', marginTop: 10, fontWeight: 500 }}>{err}</p>}
+          </form>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, width: '100%', maxWidth: 340, marginBottom: 24 }}>
+            <div style={{ flex: 1, height: 1, background: 'rgba(21,16,31,.08)' }} />
+            <span className="eyebrow" style={{ fontSize: 10, color: 'rgba(21,16,31,.2)' }}>OU</span>
+            <div style={{ flex: 1, height: 1, background: 'rgba(21,16,31,.08)' }} />
+          </div>
+
+          <button onClick={onScan} style={{ width: '100%', maxWidth: 340, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 10, background: '#5B21B6', color: '#fff', borderRadius: 18, padding: '18px 32px', fontSize: 17, fontWeight: 700, boxShadow: '0 12px 32px rgba(91,33,182,.3)' }}>
+            <IconScan /> Scanner un QR code
           </button>
-        </div>
-        {err && <p style={{ fontSize: 13, color: '#EF4444', marginTop: 10, fontWeight: 500 }}>{err}</p>}
-      </form>
-
-      {/* Divider */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16, width: '100%', maxWidth: 340, marginBottom: 24 }}>
-        <div style={{ flex: 1, height: 1, background: 'rgba(21, 16, 31, 0.08)' }} />
-        <span className="eyebrow" style={{ fontSize: 10, color: 'rgba(21, 16, 31, 0.2)' }}>OU</span>
-        <div style={{ flex: 1, height: 1, background: 'rgba(21, 16, 31, 0.08)' }} />
-      </div>
-
-      {/* Scan */}
-      <button onClick={onScan} style={{ width: '100%', maxWidth: 340, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 10, background: '#5B21B6', color: '#fff', borderRadius: 18, padding: '18px 32px', fontSize: 17, fontWeight: 700, boxShadow: '0 12px 32px rgba(91,33,182,.3)', transition: 'all 0.2s' }}>
-        <IconScan /> Scanner un QR code
-      </button>
-      <p style={{ marginTop: 20, fontSize: 13, color: 'rgba(21, 16, 31, 0.3)', textAlign: 'center', fontWeight: 500 }}>
-        Première visite ? Scannez le QR code du restaurant.
-      </p>
+          <p style={{ marginTop: 16, fontSize: 13, color: 'rgba(21,16,31,.3)', textAlign: 'center', fontWeight: 500 }}>
+            Première visite ? Scannez le QR code du restaurant.
+          </p>
+        </>
+      ) : (
+        <form onSubmit={handlePassword} style={{ width: '100%', maxWidth: 340, display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <input type="password" placeholder="Mot de passe" value={password} onChange={e => { setPassword(e.target.value); setErr('') }}
+              disabled={busy} style={{ ...inputSt, flex: 1, letterSpacing: '0.2em' }} autoFocus />
+            <button type="submit" disabled={busy || !password} style={btnSt(busy || !password)}>
+              {busy ? '…' : '→'}
+            </button>
+          </div>
+          {err && <p style={{ fontSize: 13, color: '#EF4444', fontWeight: 500 }}>{err}</p>}
+          <button type="button" onClick={() => { setStep('phone'); setPassword(''); setErr('') }}
+            style={{ fontSize: 13, color: 'rgba(21,16,31,.4)', fontWeight: 500, padding: '8px 0' }}>
+            ← Modifier le numéro
+          </button>
+        </form>
+      )}
     </div>
   )
 }
@@ -561,8 +577,8 @@ function DetailScreen({ client, clientName, onBack }: {
 
 function Spinner() {
   return (
-    <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F2F2F7' }}>
-      <div style={{ width: 40, height: 40, borderRadius: '50%', border: '3px solid #E5E5EA', borderTopColor: '#185FA5', animation: 'spin .8s linear infinite' }} />
+    <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F6F1E7' }}>
+      <div style={{ width: 40, height: 40, borderRadius: '50%', border: '3px solid rgba(91,33,182,.15)', borderTopColor: '#5B21B6', animation: 'spin .8s linear infinite' }} />
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   )
@@ -622,8 +638,9 @@ export default function ClientApp() {
 
   if (loading) return <><style>{CSS}</style><Spinner /></>
 
-  function handlePhoneLogin(p: string) {
+  function handlePhoneLogin(p: string, n: string) {
     localStorage.setItem('fidele_client_phone', p)
+    if (n) { localStorage.setItem('fidele_client_name', n); setClientName(n) }
     setPhone(p)
     setHasPhone(true)
     loadData(p)

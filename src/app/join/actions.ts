@@ -1,6 +1,9 @@
 'use server'
 
+import { createHash } from 'crypto'
 import { createAdminClient } from '@/lib/supabase/server'
+
+const hashPassword = (p: string) => createHash('sha256').update(p).digest('hex')
 
 export async function getTokenData(token: string) {
   const admin = await createAdminClient()
@@ -11,8 +14,8 @@ export async function getTokenData(token: string) {
   return data as { id: string; amount: number; used_at: string | null; restaurant_id: string; restaurants: { name: string } } | null
 }
 
-export async function processJoinWithToken(input: { token: string; phone: string; name: string }) {
-  const { token, phone, name } = input
+export async function processJoinWithToken(input: { token: string; phone: string; name: string; password?: string }) {
+  const { token, phone, name, password } = input
   const admin = await createAdminClient()
 
   const { data: qrToken } = await (admin.from('qr_tokens') as any)
@@ -31,7 +34,7 @@ export async function processJoinWithToken(input: { token: string; phone: string
     let currentClient = existing
     if (!existing) {
       const { data: newClient, error: ce } = await (admin.from('clients') as any)
-        .insert({ restaurant_id: restaurantId, name, phone, points_balance: 0, total_visits: 0, total_spent: 0 })
+        .insert({ restaurant_id: restaurantId, name, phone, points_balance: 0, total_visits: 0, total_spent: 0, password_hash: password ? hashPassword(password) : null })
         .select().single()
       if (ce) throw ce
       currentClient = newClient
