@@ -5,8 +5,6 @@ import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { signInAction } from './actions'
-
 export default function LoginPage() {
   const [email,    setEmail]    = useState('')
   const [password, setPassword] = useState('')
@@ -18,14 +16,23 @@ export default function LoginPage() {
     setError('')
     setLoading(true)
 
-    const result = await signInAction(email, password)
-
-    if (result?.error) {
-      setError(result.error)
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+        credentials: 'include',
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data.error ?? 'Identifiants incorrects.')
+        setLoading(false)
+      } else {
+        window.location.href = '/dashboard'
+      }
+    } catch {
+      setError('Erreur réseau.')
       setLoading(false)
-    } else {
-      // Hard redirect — force le navigateur à envoyer les cookies de session
-      window.location.href = '/dashboard'
     }
   }
 
