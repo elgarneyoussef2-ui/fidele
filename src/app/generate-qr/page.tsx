@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button'
 import { QrCode, Download, Printer, Loader2 } from 'lucide-react'
 import AppShell from '@/components/dashboard/AppShell'
 import QRCode from 'qrcode'
-import { createClient } from '@/lib/supabase/client'
 
 const POINTS_PER_10_MAD = 1
 
@@ -17,19 +16,10 @@ export default function GenerateQRPage() {
   const [qrDataUrl,    setQrDataUrl]    = useState('')
   const [restaurantId, setRestaurantId] = useState<string | null>(null)
 
-  // Load restaurant ID for the logged-in user
   useEffect(() => {
-    async function load() {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-      const { data } = await (supabase.from('restaurants') as any)
-        .select('id')
-        .eq('owner_id', user.id)
-        .single()
-      if (data) setRestaurantId(data.id)
-    }
-    load()
+    fetch('/api/auth/me')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.id) setRestaurantId(d.id) })
   }, [])
 
   const amountNum = Number(amount)

@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
-import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { cookies } from 'next/headers'
+import { createAdminClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Users, CreditCard, Utensils, TrendingUp } from 'lucide-react'
 import VisitsChart from '@/components/dashboard/VisitsChart'
@@ -20,16 +21,15 @@ function timeAgo(dateStr: string) {
 }
 
 export default async function DashboardPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  const cookieStore = cookies()
+  const restaurantId = cookieStore.get('taghra_resto')?.value
+  if (!restaurantId) redirect('/login')
 
   const admin = await createAdminClient()
 
-  // Restaurant du user connecté
   const { data: restaurant } = await (admin.from('restaurants') as any)
     .select('id, name')
-    .eq('owner_id', user.id)
+    .eq('id', restaurantId)
     .single()
 
   if (!restaurant) redirect('/login')

@@ -5,7 +5,6 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { LayoutDashboard, Gift, QrCode, LogOut } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { createClient } from '@/lib/supabase/client'
 
 const NAV = [
   { href: '/dashboard',   label: 'Dashboard',   icon: LayoutDashboard },
@@ -21,25 +20,18 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     async function load() {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-      setUserEmail(user.email ?? '')
-      // Fetch restaurant name
-      const { data } = await (supabase.from('restaurants') as any)
-        .select('name')
-        .eq('owner_id', user.id)
-        .single()
-      if (data) setRestaurantName(data.name)
+      const res = await fetch('/api/auth/me')
+      if (!res.ok) return
+      const data = await res.json()
+      setRestaurantName(data.name ?? '')
+      setUserEmail(data.email ?? '')
     }
     load()
   }, [])
 
   async function handleLogout() {
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    router.push('/login')
-    router.refresh()
+    await fetch('/api/auth/login', { method: 'DELETE' })
+    window.location.href = '/login'
   }
 
   const initials = restaurantName
