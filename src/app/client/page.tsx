@@ -581,9 +581,22 @@ function DetailScreen({ client, clientName, onBack }: {
 
 function Spinner() {
   return (
-    <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff' }}>
-      <div style={{ width: 40, height: 40, borderRadius: '50%', border: '3px solid rgba(91,33,182,.15)', borderTopColor: '#5B21B6', animation: 'spin .8s linear infinite' }} />
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20, background: '#fff' }}>
+      <style>{`
+        @keyframes pulse-ring { 0%,100%{transform:scale(0.92);opacity:.6} 50%{transform:scale(1.08);opacity:1} }
+        @keyframes dot-pop    { 0%,100%{transform:scale(1)}              50%{transform:scale(1.3)} }
+        .sp-ring{animation:pulse-ring 1.6s ease-in-out infinite;transform-origin:50px 50px}
+        .sp-dot {animation:dot-pop   1.6s ease-in-out infinite;transform-origin:50px 50px}
+      `}</style>
+      <div style={{ color: '#5B21B6' }}>
+        <svg viewBox="0 0 100 100" width="72" height="72" aria-hidden>
+          <circle className="sp-ring" cx="50" cy="50" r="42" fill="none" stroke="currentColor" strokeWidth="3" />
+          <circle className="sp-dot"  cx="50" cy="50" r="11" fill="currentColor" />
+        </svg>
+      </div>
+      <span style={{ fontFamily: 'var(--font-display), serif', fontStyle: 'italic', fontSize: 28, letterSpacing: '-0.02em', color: '#15101F' }}>
+        Fid<span style={{ color: '#5B21B6' }}>è</span>le
+      </span>
     </div>
   )
 }
