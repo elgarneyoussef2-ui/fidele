@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
   ResponsiveContainer,
   LineChart,
@@ -12,32 +12,11 @@ import {
   type TooltipProps,
 } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { format, subDays } from 'date-fns'
+import { format, parseISO } from 'date-fns'
 import { fr } from 'date-fns/locale'
 
 type Period = 7 | 30 | 90
-
-function generateMockData(days: number) {
-  const data = []
-  for (let i = days - 1; i >= 0; i--) {
-    const date = subDays(new Date(), i)
-    const dow  = date.getDay() // 0=dim, 6=sam
-    const isWeekend = dow === 0 || dow === 6
-
-    // Base aléatoire + boost weekend
-    const base    = Math.floor(Math.random() * 15) + 8
-    const weekend = isWeekend ? Math.floor(Math.random() * 20) + 10 : 0
-    // Légère tendance haussière sur le temps
-    const trend   = Math.floor((days - i) / days * 8)
-
-    data.push({
-      date,
-      label: format(date, days <= 7 ? 'EEE d' : 'd MMM', { locale: fr }),
-      visites: base + weekend + trend,
-    })
-  }
-  return data
-}
+type Row = { date: string; visites: number }
 
 function CustomTooltip({ active, payload, label }: TooltipProps<number, string>) {
   if (!active || !payload?.length) return null
@@ -59,13 +38,25 @@ const PERIODS: { label: string; value: Period }[] = [
 
 export default function VisitsChart() {
   const [period, setPeriod] = useState<Period>(30)
+  const [raw, setRaw]       = useState<Row[]>([])
 
-  const data = useMemo(() => generateMockData(period), [period])
+  useEffect(() => {
+    fetch('/api/visits-chart')
+      .then(r => r.ok ? r.json() : [])
+      .then(setRaw)
+  }, [])
+
+  const data = useMemo(() => {
+    const slice = raw.slice(raw.length - period)
+    return slice.map(r => ({
+      ...r,
+      label: format(parseISO(r.date), period <= 7 ? 'EEE d' : 'd MMM', { locale: fr }),
+    }))
+  }, [raw, period])
 
   const total = data.reduce((s, d) => s + d.visites, 0)
-
-  // N'afficher qu'un label sur N pour éviter l'encombrement
   const tickInterval = period === 7 ? 0 : period === 30 ? 4 : 9
+  const isEmpty = total === 0
 
   return (
     <Card>
@@ -74,11 +65,11 @@ export default function VisitsChart() {
           <div>
             <CardTitle>Visites</CardTitle>
             <p className="text-sm text-gray-500 mt-0.5">
-              <span className="font-semibold text-gray-900">{total}</span> visites sur {period === 90 ? '3 mois' : `${period} jours`}
+              <span className="font-semibold text-gray-900">{total}</span> visite{total > 1 ? 's' : ''} sur{' '}
+              {period === 90 ? '3 mois' : `${period} jours`}
             </p>
           </div>
 
-          {/* Filtres */}
           <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
             {PERIODS.map(({ label, value }) => (
               <button
@@ -98,33 +89,42 @@ export default function VisitsChart() {
       </CardHeader>
 
       <CardContent>
-        <ResponsiveContainer width="100%" height={220}>
-          <LineChart data={data} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
-            <XAxis
-              dataKey="label"
-              tick={{ fontSize: 11, fill: '#9ca3af' }}
-              axisLine={false}
-              tickLine={false}
-              interval={tickInterval}
-            />
-            <YAxis
-              tick={{ fontSize: 11, fill: '#9ca3af' }}
-              axisLine={false}
-              tickLine={false}
-              allowDecimals={false}
-            />
-            <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#185FA5', strokeWidth: 1, strokeDasharray: '4 4' }} />
-            <Line
-              type="monotone"
-              dataKey="visites"
-              stroke="#185FA5"
-              strokeWidth={2}
-              dot={false}
-              activeDot={{ r: 5, fill: '#185FA5', stroke: '#fff', strokeWidth: 2 }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
+        {isEmpty ? (
+          <div className="h-[220px] flex items-center justify-center text-sm text-gray-400">
+            Aucune visite sur cette période.
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={220}>
+            <LineChart data={data} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+              <XAxis
+                dataKey="label"
+                tick={{ fontSize: 11, fill: '#9ca3af' }}
+                axisLine={false}
+                tickLine={false}
+                interval={tickInterval}
+              />
+              <YAxis
+                tick={{ fontSize: 11, fill: '#9ca3af' }}
+                axisLine={false}
+                tickLine={false}
+                allowDecimals={false}
+              />
+              <Tooltip
+                content={<CustomTooltip />}
+                cursor={{ stroke: '#185FA5', strokeWidth: 1, strokeDasharray: '4 4' }}
+              />
+              <Line
+                type="monotone"
+                dataKey="visites"
+                stroke="#185FA5"
+                strokeWidth={2}
+                dot={false}
+                activeDot={{ r: 5, fill: '#185FA5', stroke: '#fff', strokeWidth: 2 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        )}
       </CardContent>
     </Card>
   )
