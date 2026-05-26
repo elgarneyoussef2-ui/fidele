@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Fidèle — Identité Visuelle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --violet:#5B21B6;
+    --violet-deep:#3F1685;
+    --violet-soft:#C7B8F2;
+    --violet-tint:#EDE6FB;
+    --ink:#15101F;
+    --ink-2:#2A2236;
+    --cream:#F6F1E7;
+    --cream-2:#EFE7D6;
+    --paper:#FFFFFF;
+    --honey:#E9A23B;
+    --honey-deep:#B5781F;
+    --line:rgba(21,16,31,.14);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0a0810;font-family:'DM Sans',sans-serif;color:var(--ink)}
+
+  deck-stage > section{
+    background:var(--cream);
+    color:var(--ink);
+    padding:80px 120px;
+    position:relative;
+    overflow:hidden;
+    font-family:'DM Sans',sans-serif;
+  }
+
+  /* ---------- Type ---------- */
+  .display{font-family:'Instrument Serif',serif;font-weight:400;letter-spacing:-.015em;line-height:.95}
+  .display-i{font-family:'Instrument Serif',serif;font-style:italic;font-weight:400;letter-spacing:-.02em;line-height:.95}
+  .mono{font-family:'JetBrains Mono',monospace}
+  .eyebrow{
+    font-family:'DM Sans',sans-serif;
+    font-weight:500;
+    font-size:24px;
+    letter-spacing:.22em;
+    text-transform:uppercase;
+    color:var(--violet);
+  }
+  .eyebrow.ink{color:var(--ink)}
+  .eyebrow.cream{color:var(--cream)}
+
+  /* ---------- Shell elements ---------- */
+  .slide-no{
+    position:absolute;
+    top:60px;right:120px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:24px;
+    letter-spacing:.1em;
+    color:var(--ink);
+    opacity:.5;
+  }
+  .footmark{
+    position:absolute;
+    bottom:60px;left:120px;
+    display:flex;align-items:center;gap:14px;
+    font-family:'DM Sans',sans-serif;
+    font-size:24px;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    color:var(--ink);
+    opacity:.55;
+  }
+  .footmark .dot{width:8px;height:8px;border-radius:50%;background:currentColor}
+  .footmark.on-dark{color:var(--cream)}
+
+  /* ---------- Logomark (the dot-in-circle) ---------- */
+  .mark{display:inline-block;position:relative}
+  .mark svg{display:block}
+
+  /* ---------- Section ON DARK ---------- */
+  .on-ink{background:var(--ink) !important;color:var(--cream)}
+  .on-ink .slide-no{color:var(--cream);opacity:.45}
+  .on-violet{background:var(--violet) !important;color:var(--cream)}
+  .on-violet .slide-no{color:var(--cream);opacity:.55}
+  .on-cream-2{background:var(--cream-2) !important}
+
+  /* ---------- Grain texture ---------- */
+  .grain::before{
+    content:"";position:absolute;inset:0;pointer-events:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .35 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+    mix-blend-mode:multiply;opacity:.18;
+  }
+
+  /* ---------- Card utility ---------- */
+  .card{background:var(--paper);border-radius:18px;box-shadow:0 30px 60px -30px rgba(21,16,31,.25),0 4px 18px -8px rgba(21,16,31,.1)}
+
+  /* ---------- Cover ---------- */
+  .cover{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:0;
+    padding:0 !important;
+    background:var(--cream);
+  }
+  .cover .left{padding:90px 100px;display:flex;flex-direction:column;justify-content:space-between;position:relative}
+  .cover .right{background:var(--violet);position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .cover .right::after{
+    content:"";position:absolute;inset:0;
+    background:radial-gradient(circle at 50% 50%, rgba(199,184,242,.25), transparent 60%);
+  }
+  .cover .topbar{display:flex;justify-content:space-between;align-items:center}
+  .cover .topbar .tag{font-family:'JetBrains Mono',monospace;font-size:24px;letter-spacing:.15em;color:var(--ink);opacity:.6}
+  .cover .bigname{font-family:'Instrument Serif',serif;font-style:italic;font-size:280px;line-height:1.05;letter-spacing:-.04em;color:var(--ink);padding-top:40px}
+  .cover .bigname .accent{color:var(--violet)}
+  .cover .sub{margin-top:48px;font-family:'Instrument Serif',serif;font-size:36px;line-height:1.25;color:var(--ink-2);max-width:560px}
+  .cover .meta{display:flex;gap:48px;font-family:'JetBrains Mono',monospace;font-size:24px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink);opacity:.55}
+
+  /* ---------- Section divider chips ---------- */
+  .chip{display:inline-flex;align-items:center;gap:10px;border:1px solid var(--line);padding:14px 26px;border-radius:999px;font-family:'JetBrains Mono',monospace;font-size:24px;letter-spacing:.1em;text-transform:uppercase}
+  .chip .dot{width:8px;height:8px;border-radius:50%;background:var(--violet)}
+
+  /* ---------- Manifesto ---------- */
+  .manifesto{display:grid;grid-template-columns:1fr 1fr;gap:120px;align-items:start;padding-top:40px;padding-bottom:80px}
+  .manifesto h2{font-family:'Instrument Serif',serif;font-size:140px;line-height:.93;letter-spacing:-.025em}
+  .manifesto h2 em{font-style:italic;color:var(--violet)}
+  .manifesto .pillar-grid{display:grid;grid-template-columns:1fr;gap:36px;padding-bottom:20px}
+  .manifesto .pillar{border-top:1px solid var(--line);padding-top:24px}
+  .manifesto .pillar h4{font-family:'Instrument Serif',serif;font-style:italic;font-size:42px;color:var(--violet);margin-bottom:8px}
+  .manifesto .pillar p{font-size:24px;line-height:1.55;color:var(--ink-2);max-width:440px}
+
+  /* ---------- Logo construction ---------- */
+  .logo-construct{display:grid;grid-template-columns:1.2fr 1fr;gap:80px;height:100%;align-items:center}
+  .logo-construct .stage{
+    background:var(--paper);border-radius:24px;aspect-ratio:1.2/1;
+    display:flex;align-items:center;justify-content:center;position:relative;
+    box-shadow:0 30px 60px -30px rgba(21,16,31,.18);
+  }
+  .construct-grid{position:absolute;inset:60px;border:1px dashed var(--violet-soft);border-radius:8px}
+  .construct-grid::before,.construct-grid::after{
+    content:"";position:absolute;background:var(--violet-soft);
+  }
+  .construct-grid::before{left:50%;top:0;bottom:0;width:1px;transform:translateX(-50%)}
+  .construct-grid::after{top:50%;left:0;right:0;height:1px;transform:translateY(-50%)}
+
+  /* ---------- Variants grid ---------- */
+  .variants{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-top:40px}
+  .variant-tile{
+    aspect-ratio:1.35/1;border-radius:16px;
+    display:flex;align-items:center;justify-content:center;
+    position:relative;overflow:hidden;
+    border:1px solid var(--line);
+  }
+  .variant-tile .label{
+    position:absolute;left:18px;bottom:14px;
+    font-family:'JetBrains Mono',monospace;font-size:18px;
+    letter-spacing:.12em;text-transform:uppercase;opacity:.65;
+  }
+  .variant-tile.cream{background:var(--cream)}
+  .variant-tile.paper{background:var(--paper)}
+  .variant-tile.ink{background:var(--ink);color:var(--cream)}
+  .variant-tile.violet{background:var(--violet);color:var(--cream)}
+  .variant-tile.honey{background:var(--honey);color:var(--ink)}
+  .variant-tile.lilac{background:var(--violet-tint)}
+
+  /* ---------- Wordmark display ---------- */
+  .wordmark{font-family:'Instrument Serif',serif;letter-spacing:-.02em;line-height:1}
+  .wordmark .acc{font-style:italic;color:var(--violet)}
+
+  /* ---------- Color palette ---------- */
+  .palette{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr 1fr;gap:18px;margin-top:60px;height:580px}
+  .swatch{border-radius:18px;padding:30px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}
+  .swatch .name{font-family:'Instrument Serif',serif;font-style:italic;font-size:46px;line-height:1}
+  .swatch .name small{display:block;font-family:'DM Sans',sans-serif;font-style:normal;font-size:13px;letter-spacing:.16em;text-transform:uppercase;margin-bottom:8px;opacity:.7}
+  .swatch .specs{font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.6;letter-spacing:.06em;opacity:.85}
+  .swatch.violet{background:var(--violet);color:var(--cream)}
+  .swatch.ink{background:var(--ink);color:var(--cream)}
+  .swatch.cream{background:var(--cream-2);color:var(--ink);border:1px solid var(--line)}
+  .swatch.honey{background:var(--honey);color:var(--ink)}
+  .swatch.lilac{background:var(--violet-tint);color:var(--ink)}
+  .swatch.paper{background:var(--paper);color:var(--ink);border:1px solid var(--line)}
+
+  /* ---------- Typography ---------- */
+  .type-grid{display:grid;grid-template-columns:1fr 1fr;gap:80px;margin-top:50px;height:680px}
+  .type-block{display:flex;flex-direction:column;gap:24px;border-top:1px solid var(--line);padding-top:30px}
+  .type-block .face{font-size:180px;line-height:1.1;letter-spacing:-.03em;padding-top:18px}
+  .type-block .face.sans{font-family:'DM Sans',sans-serif;font-weight:500;letter-spacing:-.04em}
+  .type-block .face.serif{font-family:'Instrument Serif',serif;font-style:italic}
+  .type-block .meta{display:flex;justify-content:space-between;align-items:flex-end;gap:20px}
+  .type-block .meta .name{font-family:'Instrument Serif',serif;font-size:48px;font-style:italic}
+  .type-block .meta .name small{display:block;font-family:'DM Sans',sans-serif;font-style:normal;font-size:13px;letter-spacing:.18em;text-transform:uppercase;opacity:.6;margin-bottom:6px}
+  .type-block .role{font-size:18px;line-height:1.55;color:var(--ink-2);max-width:420px}
+  .type-block .specimen{font-family:'DM Sans',sans-serif;font-size:18px;line-height:1.6;color:var(--ink-2);border-top:1px solid var(--line);padding-top:20px}
+  .type-block .specimen.serif{font-family:'Instrument Serif',serif;font-size:24px;line-height:1.4}
+
+  /* ---------- Type scale ---------- */
+  .scale-row{display:grid;grid-template-columns:120px 1fr;gap:40px;align-items:baseline;border-top:1px solid var(--line);padding:18px 0}
+  .scale-row .label{font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.1em;opacity:.55;text-transform:uppercase}
+  .scale-row .sample{font-family:'Instrument Serif',serif;color:var(--ink)}
+  .scale-row .sample.sans{font-family:'DM Sans',sans-serif}
+
+  /* ---------- Icons ---------- */
+  .icon-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:16px;margin-top:50px}
+  .icon-cell{
+    aspect-ratio:1/1;border-radius:14px;background:var(--paper);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+    border:1px solid var(--line);
+    transition:transform .2s ease;
+  }
+  .icon-cell .label{font-family:'JetBrains Mono',monospace;font-size:16px;letter-spacing:.1em;text-transform:uppercase;opacity:.65}
+  .icon-cell svg{width:54px;height:54px;stroke:var(--ink);stroke-width:1.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
+
+  /* ---------- Loyalty cards ---------- */
+  .cards-row{display:grid;grid-template-columns:repeat(3,1fr);gap:40px;margin-top:50px}
+  .lc{
+    aspect-ratio:1.586/1;border-radius:22px;padding:34px;position:relative;overflow:hidden;
+    display:flex;flex-direction:column;justify-content:space-between;
+    box-shadow:0 40px 70px -30px rgba(21,16,31,.45),0 6px 24px -10px rgba(21,16,31,.18);
+  }
+  .lc .lc-top{display:flex;justify-content:space-between;align-items:flex-start}
+  .lc .lc-name{font-family:'Instrument Serif',serif;font-style:italic;font-size:54px;line-height:.9}
+  .lc .lc-num{font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.18em;opacity:.7}
+  .lc .lc-foot{display:flex;justify-content:space-between;align-items:flex-end}
+  .lc .lc-foot small{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;opacity:.7;display:block;margin-bottom:6px}
+  .lc .lc-foot .holder{font-family:'Instrument Serif',serif;font-size:24px}
+  .lc.violet{background:var(--violet);color:var(--cream)}
+  .lc.ink{background:var(--ink);color:var(--cream)}
+  .lc.cream{background:var(--cream-2);color:var(--ink);border:1px solid var(--line)}
+  .lc.honey{background:var(--honey);color:var(--ink)}
+
+  /* punch stamps on cream card */
+  .stamps{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:18px}
+  .stamp{
+    aspect-ratio:1/1;border:1.5px dashed currentColor;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;opacity:.45;
+  }
+  .stamp.on{opacity:1;background:var(--violet);border-style:solid;border-color:var(--violet)}
+  .stamp.on svg{stroke:var(--cream)}
+
+  /* ---------- Social media ---------- */
+  .social{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 0.6fr;gap:18px;margin-top:50px;height:680px}
+  .ig{border-radius:18px;padding:30px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}
+  .ig.violet{background:var(--violet);color:var(--cream)}
+  .ig.cream{background:var(--cream-2);color:var(--ink)}
+  .ig.ink{background:var(--ink);color:var(--cream)}
+  .ig.honey{background:var(--honey);color:var(--ink)}
+  .ig.story{aspect-ratio:9/16;background:var(--violet);color:var(--cream)}
+  .ig .ig-eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;opacity:.7}
+  .ig .ig-headline{font-family:'Instrument Serif',serif;font-style:italic;font-size:54px;line-height:.95;letter-spacing:-.02em}
+  .ig .ig-foot{display:flex;justify-content:space-between;align-items:center;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;opacity:.75}
+
+  /* ---------- Stationery ---------- */
+  .stationery{display:grid;grid-template-columns:1fr 1fr 0.9fr;gap:40px;margin-top:90px;align-items:start}
+  .biz-stack{display:flex;flex-direction:column;gap:24px}
+  .biz{
+    aspect-ratio:1.75/1;border-radius:14px;padding:26px;position:relative;overflow:hidden;
+    display:flex;flex-direction:column;justify-content:space-between;
+    box-shadow:0 30px 60px -30px rgba(21,16,31,.35),0 4px 18px -8px rgba(21,16,31,.12);
+  }
+  .biz.front{background:var(--cream-2);color:var(--ink)}
+  .biz.back{background:var(--violet);color:var(--cream)}
+  .biz .biz-name{font-family:'Instrument Serif',serif;font-style:italic;font-size:44px;line-height:.95}
+  .biz .biz-role{font-family:'DM Sans',sans-serif;font-size:13px;letter-spacing:.18em;text-transform:uppercase;opacity:.7}
+  .biz .biz-contact{font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.7;letter-spacing:.04em}
+
+  .receipt{
+    background:var(--paper);border-radius:14px 14px 0 0;padding:36px 32px 0;
+    font-family:'JetBrains Mono',monospace;color:var(--ink);
+    box-shadow:0 30px 60px -30px rgba(21,16,31,.25),0 4px 18px -8px rgba(21,16,31,.1);
+    position:relative;max-width:380px;
+  }
+  .receipt::after{
+    content:"";display:block;height:22px;
+    background:
+      radial-gradient(circle at 11px 0, transparent 11px, var(--paper) 11px) 0 0 / 22px 22px repeat-x;
+    margin:24px -32px 0;
+  }
+  .receipt-head{text-align:center;border-bottom:1px dashed var(--line);padding-bottom:18px;margin-bottom:16px}
+  .receipt-head .r-name{font-family:'Instrument Serif',serif;font-style:italic;font-size:38px;line-height:1}
+  .receipt-head .r-sub{font-size:10px;letter-spacing:.18em;text-transform:uppercase;opacity:.6;margin-top:8px}
+  .receipt-row{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;letter-spacing:.04em}
+  .receipt-row.bold{font-weight:700;border-top:1px dashed var(--line);margin-top:8px;padding-top:8px}
+  .receipt-points{background:var(--violet-tint);border-radius:10px;padding:14px;margin-top:14px;text-align:center;color:var(--violet-deep)}
+  .receipt-points .big{font-family:'Instrument Serif',serif;font-style:italic;font-size:42px;line-height:1}
+  .receipt-points small{display:block;font-size:10px;letter-spacing:.18em;text-transform:uppercase;margin-top:4px;color:var(--violet)}
+
+  /* ---------- Closing ---------- */
+  .closing{display:flex;flex-direction:column;justify-content:space-between;height:100%;padding:0 !important}
+  .closing .top{padding:90px 120px 0;display:flex;justify-content:space-between;align-items:flex-start}
+  .closing .center{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 120px}
+  .closing .center h2{font-family:'Instrument Serif',serif;font-style:italic;font-size:200px;line-height:.9;letter-spacing:-.03em;color:var(--cream)}
+  .closing .center h2 .acc{color:var(--honey)}
+  .closing .bottom{padding:0 120px 90px;display:flex;justify-content:space-between;align-items:flex-end;font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--cream);opacity:.7}
+
+  /* DON'T marker */
+  .x-mark{position:absolute;top:14px;right:14px;width:28px;height:28px;border-radius:50%;background:#C44536;color:#fff;display:flex;align-items:center;justify-content:center;font-family:'DM Sans',sans-serif;font-weight:700;font-size:14px}
+  .ok-mark{position:absolute;top:14px;right:14px;width:28px;height:28px;border-radius:50%;background:#2F8F58;color:#fff;display:flex;align-items:center;justify-content:center;font-family:'DM Sans',sans-serif;font-weight:700;font-size:14px}
+
+</style>
+</head>
+<body>
+
+<deck-stage width="1920" height="1080">
+
+  <!-- ============ 01 — COVER ============ -->
+  <section data-screen-label="01 Cover" class="cover grain">
+    <div class="left">
+      <div class="topbar">
+        <span class="tag">FIDÈLE / BRAND GUIDELINES</span>
+        <span class="tag">V.01 — 2026</span>
+      </div>
+      <div>
+        <div class="bigname">Fid<span class="accent">è</span>le</div>
+        <div class="sub">Le programme de fidélité <em>pensé pour le café du coin</em> et son client le plus régulier.</div>
+      </div>
+      <div class="meta">
+        <span>01 / Identité visuelle</span>
+        <span>14 sections</span>
+        <span>Document de marque</span>
+      </div>
+    </div>
+    <div class="right">
+      <!-- Big logomark -->
+      <svg viewBox="0 0 600 600" width="520" height="520" aria-label="Fidèle mark">
+        <circle cx="300" cy="300" r="240" fill="none" stroke="#F6F1E7" stroke-width="14"/>
+        <circle cx="300" cy="300" r="64" fill="#F6F1E7"/>
+        <circle cx="300" cy="300" r="220" fill="none" stroke="#F6F1E7" stroke-width="1" stroke-dasharray="3 8" opacity=".4"/>
+      </svg>
+    </div>
+  </section>
+
+
+  <!-- ============ 02 — MANIFESTO ============ -->
+  <section data-screen-label="02 Manifeste" class="grain">
+    <div class="slide-no mono">02 — Manifeste</div>
+    <div class="manifesto">
+      <div>
+        <div class="eyebrow" style="margin-bottom:30px">Notre raison d'être</div>
+        <h2>La fidélité, <em>par cœur.</em></h2>
+        <p style="margin-top:40px;font-family:'Instrument Serif',serif;font-size:30px;line-height:1.3;color:var(--ink-2);max-width:540px">
+          Fidèle aide les cafés, bistros et restaurants de quartier à entretenir ce lien simple et précieux : reconnaître ceux qui reviennent.
+        </p>
+      </div>
+      <div class="pillar-grid">
+        <div class="pillar">
+          <h4>Humain</h4>
+          <p>On parle français, on tutoie le client, on garde le ton chaleureux d'un patron qui te reconnaît à la porte.</p>
+        </div>
+        <div class="pillar">
+          <h4>Précis</h4>
+          <p>Chaque point compte, chaque visite se voit. Une mécanique transparente, sans jargon ni surprise.</p>
+        </div>
+        <div class="pillar">
+          <h4>Quotidien</h4>
+          <p>Conçu pour le matin pressé, le déjeuner rapide, le verre du soir. Trois secondes, un scan, un sourire.</p>
+        </div>
+      </div>
+    </div>
+    <div class="footmark"><span class="dot"></span> FIDÈLE — BRAND BOOK</div>
+  </section>
+
+
+  <!-- ============ 03 — LOGOMARK ============ -->
+  <section data-screen-label="03 Logomark" class="grain">
+    <div class="slide-no mono">03 — Le symbole</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:80px;height:100%;align-items:center">
+      <div>
+        <div class="eyebrow" style="margin-bottom:24px">Le symbole</div>
+        <h2 class="display" style="font-size:120px">Un point<br>au centre.</h2>
+        <p style="margin-top:40px;font-family:'Instrument Serif',serif;font-size:26px;line-height:1.4;color:var(--ink-2);max-width:520px">
+          Le client au centre, le cercle de la relation autour. C'est aussi <em>l'œil du tampon</em>, le grain de café, le point qu'on coche après chaque visite.
+        </p>
+        <div style="display:flex;gap:14px;margin-top:50px;flex-wrap:wrap">
+          <span class="chip"><span class="dot"></span>Tampon de fidélité</span>
+          <span class="chip"><span class="dot"></span>Œil bienveillant</span>
+          <span class="chip"><span class="dot"></span>Grain &amp; point</span>
+        </div>
+      </div>
+      <div class="stage" style="background:var(--paper);border-radius:24px;aspect-ratio:1.2/1;display:flex;align-items:center;justify-content:center;position:relative;box-shadow:0 30px 60px -30px rgba(21,16,31,.18)">
+        <div class="construct-grid"></div>
+        <svg viewBox="0 0 600 600" width="420" height="420">
+          <!-- Construction guides -->
+          <circle cx="300" cy="300" r="240" fill="none" stroke="#C7B8F2" stroke-width="1" stroke-dasharray="4 6"/>
+          <circle cx="300" cy="300" r="180" fill="none" stroke="#C7B8F2" stroke-width="1" stroke-dasharray="4 6"/>
+          <circle cx="300" cy="300" r="80" fill="none" stroke="#C7B8F2" stroke-width="1" stroke-dasharray="4 6"/>
+          <line x1="60" y1="300" x2="540" y2="300" stroke="#C7B8F2" stroke-width="1" stroke-dasharray="2 5"/>
+          <line x1="300" y1="60" x2="300" y2="540" stroke="#C7B8F2" stroke-width="1" stroke-dasharray="2 5"/>
+          <!-- Mark -->
+          <circle cx="300" cy="300" r="200" fill="none" stroke="#5B21B6" stroke-width="14"/>
+          <circle cx="300" cy="300" r="56" fill="#5B21B6"/>
+          <!-- Radii ticks -->
+          <text x="312" y="294" font-family="JetBrains Mono" font-size="22" fill="#5B21B6" opacity=".7">r</text>
+          <text x="410" y="294" font-family="JetBrains Mono" font-size="22" fill="#5B21B6" opacity=".7">4r</text>
+        </svg>
+        <div style="position:absolute;left:24px;bottom:18px;font-family:'JetBrains Mono',monospace;font-size:20px;letter-spacing:.12em;opacity:.55;text-transform:uppercase">Construction · ratio 1 : 4</div>
+      </div>
+    </div>
+    <div class="footmark"><span class="dot"></span> FIDÈLE — BRAND BOOK</div>
+  </section>
+
+
+  <!-- ============ 04 — WORDMARK + LOCKUPS ============ -->
+  <section data-screen-label="04 Wordmark" class="grain">
+    <div class="slide-no mono">04 — Le mot-marque</div>
+    <div class="eyebrow" style="margin-bottom:30px">Wordmark &amp; lockups</div>
+    <div style="display:grid;grid-template-columns:1fr;gap:40px">
+      <!-- Primary wordmark -->
+      <div style="border-top:1px solid var(--line);padding-top:36px;display:grid;grid-template-columns:200px 1fr;gap:60px;align-items:center">
+        <div class="mono" style="font-size:20px;letter-spacing:.16em;text-transform:uppercase;opacity:.6;line-height:1.4">Wordmark<br>principal</div>
+        <div class="wordmark" style="font-size:180px">Fid<span class="acc">è</span>le</div>
+      </div>
+      <!-- Horizontal lockup -->
+      <div style="border-top:1px solid var(--line);padding-top:36px;display:grid;grid-template-columns:200px 1fr;gap:60px;align-items:center">
+        <div class="mono" style="font-size:20px;letter-spacing:.16em;text-transform:uppercase;opacity:.6;line-height:1.4">Lockup<br>horizontal</div>
+        <div style="display:flex;align-items:center;gap:32px">
+          <svg viewBox="0 0 100 100" width="100" height="100">
+            <circle cx="50" cy="50" r="42" fill="none" stroke="#15101F" stroke-width="3"/>
+            <circle cx="50" cy="50" r="11" fill="#15101F"/>
+          </svg>
+          <div class="wordmark" style="font-size:140px">Fid<span class="acc">è</span>le</div>
+        </div>
+      </div>
+      <!-- Stacked lockup -->
+      <div style="border-top:1px solid var(--line);padding-top:36px;display:grid;grid-template-columns:200px 1fr;gap:60px;align-items:center">
+        <div class="mono" style="font-size:20px;letter-spacing:.16em;text-transform:uppercase;opacity:.6;line-height:1.4">Lockup<br>empilé</div>
+        <div style="display:flex;align-items:center;gap:60px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:14px">
+            <svg viewBox="0 0 100 100" width="80" height="80">
+              <circle cx="50" cy="50" r="42" fill="none" stroke="#15101F" stroke-width="3"/>
+              <circle cx="50" cy="50" r="11" fill="#15101F"/>
+            </svg>
+            <div class="wordmark" style="font-size:54px">Fid<span class="acc">è</span>le</div>
+            <div class="mono" style="font-size:10px;letter-spacing:.28em;text-transform:uppercase;opacity:.55">Programme de fidélité</div>
+          </div>
+          <!-- Avatar / app icon -->
+          <div style="background:var(--violet);border-radius:28px;width:140px;height:140px;display:flex;align-items:center;justify-content:center">
+            <svg viewBox="0 0 100 100" width="86" height="86">
+              <circle cx="50" cy="50" r="42" fill="none" stroke="#F6F1E7" stroke-width="3.5"/>
+              <circle cx="50" cy="50" r="11" fill="#F6F1E7"/>
+            </svg>
+          </div>
+          <div class="mono" style="font-size:11px;letter-spacing:.16em;text-transform:uppercase;opacity:.55;max-width:200px;line-height:1.6">Icône application<br>140×140 / 28px radius</div>
+        </div>
+      </div>
+    </div>
+    <div class="footmark"><span class="dot"></span> FIDÈLE — BRAND BOOK</div>
+  </section>
+
+
+  <!-- ============ 05 — LOGO VARIANTS ON BG ============ -->
+  <section data-screen-label="05 Variantes" class="grain on-cream-2">
+    <div class="slide-no mono">05 — Variantes &amp; contextes</div>
+    <div class="eyebrow" style="margin-bottom:14px">Le logo sur fond</div>
+    <h2 class="display" style="font-size:88px;max-width:1100px">Le logo s'adapte. <span class="display-i" style="color:var(--violet)">Le contraste, lui, ne se négocie pas.</span></h2>
+    <div class="variants">
+      <div class="variant-tile cream">
+        <svg viewBox="0 0 100 100" width="160" height="160"><circle cx="50" cy="50" r="42" fill="none" stroke="#5B21B6" stroke-width="3"/><circle cx="50" cy="50" r="11" fill="#5B21B6"/></svg>
+        <span class="label">Violet / crème</span>
+      </div>
+      <div class="variant-tile paper">
+        <svg viewBox="0 0 100 100" width="160" height="160"><circle cx="50" cy="50" r="42" fill="none" stroke="#15101F" stroke-width="3"/><circle cx="50" cy="50" r="11" fill="#15101F"/></svg>
+        <span class="label">Encre / blanc</span>
+      </div>
+      <div class="variant-tile ink">
+        <svg viewBox="0 0 100 100" width="160" height="160"><circle cx="50" cy="50" r="42" fill="none" stroke="#F6F1E7" stroke-width="3"/><circle cx="50" cy="50" r="11" fill="#F6F1E7"/></svg>
+        <span class="label">Crème / encre</span>
+      </div>
+      <div class="variant-tile violet">
+        <svg viewBox="0 0 100 100" width="160" height="160"><circle cx="50" cy="50" r="42" fill="none" stroke="#F6F1E7" stroke-width="3"/><circle cx="50" cy="50" r="11" fill="#F6F1E7"/></svg>
+        <span class="label">Crème / violet</span>
+      </div>
+      <div class="variant-tile honey">
+        <svg viewBox="0 0 100 100" width="160" height="160"><circle cx="50" cy="50" r="42" fill="none" stroke="#15101F" stroke-width="3"/><circle cx="50" cy="50" r="11" fill="#15101F"/></svg>
+        <span class="label">Encre / miel</span>
+      </div>
+      <div class="variant-tile lilac">
+        <svg viewBox="0 0 100 100" width="160" height="160"><circle cx="50" cy="50" r="42" fill="none" stroke="#5B21B6" stroke-width="3"/><circle cx="50" cy="50" r="11" fill="#5B21B6"/></svg>
+        <span class="label">Violet / lilas</span>
+      </div>
+      <div class="variant-tile" style="background:var(--violet-deep);color:var(--cream)">
+        <svg viewBox="0 0 100 100" width="160" height="160"><circle cx="50" cy="50" r="42" fill="none" stroke="#E9A23B" stroke-width="3"/><circle cx="50" cy="50" r="11" fill="#E9A23B"/></svg>
+        <span class="label">Miel / violet foncé</span>
+      </div>
+      <div class="variant-tile" style="background:repeating-linear-gradient(135deg,#5B21B6 0 12px,#3F1685 12px 24px);color:var(--cream)">
+        <svg viewBox="0 0 100 100" width="160" height="160"><circle cx="50" cy="50" r="42" fill="none" stroke="#F6F1E7" stroke-width="3"/><circle cx="50" cy="50" r="11" fill="#F6F1E7"/></svg>
+        <span class="label">Motif maison</span>
+      </div>
+    </div>
+    <div class="footmark"><span class="dot"></span> FIDÈLE — BRAND BOOK</div>
+  </section>
+
+
+  <!-- ============ 06 — DO / DON'T ============ -->
+  <section data-screen-label="06 Do Don't" class="grain">
+    <div class="slide-no mono">06 — Règles d'usage</div>
+    <div class="eyebrow" style="margin-bottom:14px">À faire / à éviter</div>
+    <h2 class="display" style="font-size:80px;max-width:1100px">Quelques règles, <span class="display-i" style="color:var(--violet)">et le logo reste lui-même.</span></h2>
+
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-top:50px">
+
+      <div>
+        <div class="variant-tile paper" style="aspect-ratio:1.1/1">
+          <div class="ok-mark">✓</div>
+          <svg viewBox="0 0 100 100" width="150" height="150"><circle cx="50" cy="50" r="42" fill="none" stroke="#15101F" stroke-width="3"/><circle cx="50" cy="50" r="11" fill="#15101F"/></svg>
+        </div>
+        <div class="mono" style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;opacity:.65;margin-top:14px">Respiration ≥ 1× le diamètre</div>
+      </div>
+
+      <div>
+        <div class="variant-tile paper" style="aspect-ratio:1.1/1;align-items:center;padding:6px">
+          <div class="x-mark">✕</div>
+          <svg viewBox="0 0 100 100" width="220" height="160" preserveAspectRatio="none"><circle cx="50" cy="50" r="42" fill="none" stroke="#15101F" stroke-width="3"/><circle cx="50" cy="50" r="11" fill="#15101F"/></svg>
+        </div>
+        <div class="mono" style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;opacity:.65;margin-top:14px">Ne jamais étirer ou écraser</div>
+      </div>
+
+      <div>
+        <div class="variant-tile" style="background:linear-gradient(135deg,#FF7A00,#00C2FF);aspect-ratio:1.1/1">
+          <div class="x-mark">✕</div>
+          <svg viewBox="0 0 100 100" width="150" height="150"><circle cx="50" cy="50" r="42" fill="none" stroke="#F6F1E7" stroke-width="3"/><circle cx="50" cy="50" r="11" fill="#F6F1E7"/></svg>
+        </div>
+        <div class="mono" style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;opacity:.65;margin-top:14px">Pas de fonds bariolés</div>
+      </div>
+
+      <div>
+        <div class="variant-tile paper" style="aspect-ratio:1.1/1;align-items:center;justify-content:center">
+          <div class="x-mark">✕</div>
+          <svg viewBox="0 0 100 100" width="150" height="150" style="filter:drop-shadow(0 6px 14px rgba(91,33,182,.6))"><circle cx="50" cy="50" r="42" fill="none" stroke="#15101F" stroke-width="3"/><circle cx="50" cy="50" r="11" fill="#15101F"/></svg>
+        </div>
+        <div class="mono" style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;opacity:.65;margin-top:14px">Pas d'ombre, pas d'effet</div>
+      </div>
+
+      <div>
+        <div class="variant-tile paper" style="aspect-ratio:1.1/1;padding:10px">
+          <div class="ok-mark">✓</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+            <svg viewBox="0 0 100 100" width="120" height="120"><circle cx="50" cy="50" r="42" fill="none" stroke="#15101F" stroke-width="3"/><circle cx="50" cy="50" r="11" fill="#15101F"/></svg>
+            <div class="wordmark" style="font-size:34px;color:var(--ink)">Fid<span class="acc">è</span>le</div>
+          </div>
+        </div>
+        <div class="mono" style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;opacity:.65;margin-top:14px">Symbole + wordmark OK</div>
+      </div>
+
+      <div>
+        <div class="variant-tile paper" style="aspect-ratio:1.1/1">
+          <div class="x-mark">✕</div>
+          <div style="display:flex;align-items:center;gap:14px">
+            <svg viewBox="0 0 100 100" width="60" height="60"><circle cx="50" cy="50" r="42" fill="none" stroke="#15101F" stroke-width="3"/><circle cx="50" cy="50" r="11" fill="#15101F"/></svg>
+            <div style="font-family:'Comic Sans MS','Comic Sans',cursive;font-size:36px">Fidèle</div>
+          </div>
+        </div>
+        <div class="mono" style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;opacity:.65;margin-top:14px">Pas d'autre typographie</div>
+      </div>
+
+      <div>
+        <div class="variant-tile paper" style="aspect-ratio:1.1/1">
+          <div class="ok-mark">✓</div>
+          <svg viewBox="0 0 100 100" width="44" height="44"><circle cx="50" cy="50" r="42" fill="none" stroke="#15101F" stroke-width="6"/><circle cx="50" cy="50" r="14" fill="#15101F"/></svg>
+        </div>
+        <div class="mono" style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;opacity:.65;margin-top:14px">Taille min. 24 px (écran)</div>
+      </div>
+
+      <div>
+        <div class="variant-tile paper" style="aspect-ratio:1.1/1">
+          <div class="x-mark">✕</div>
+          <svg viewBox="0 0 100 100" width="130" height="130"><circle cx="50" cy="50" r="42" fill="none" stroke="#15101F" stroke-width="3"/><circle cx="58" cy="42" r="11" fill="#15101F"/></svg>
+        </div>
+        <div class="mono" style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;opacity:.65;margin-top:14px">Ne pas déplacer le point</div>
+      </div>
+
+    </div>
+    <div class="footmark"><span class="dot"></span> FIDÈLE — BRAND BOOK</div>
+  </section>
+
+
+  <!-- ============ 07 — COLOR PALETTE ============ -->
+  <section data-screen-label="07 Couleurs" class="grain">
+    <div class="slide-no mono">07 — Palette</div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:60px">
+      <div style="max-width:1100px">
+        <div class="eyebrow" style="margin-bottom:14px">Palette</div>
+        <h2 class="display" style="font-size:72px;line-height:1.05">Cinq couleurs, <span class="display-i" style="color:var(--violet)">une voix.</span></h2>
+      </div>
+      <p style="font-family:'Instrument Serif',serif;font-size:24px;line-height:1.4;max-width:420px;color:var(--ink-2);flex-shrink:0">
+        Le violet porte la marque. Le crème adoucit. L'encre structure. Le miel récompense. Le lilas accompagne.
+      </p>
+    </div>
+
+    <div class="palette" style="margin-top:40px;height:540px">
+      <div class="swatch violet">
+        <div>
+          <div class="name"><small>Primaire</small>Violet Fidèle</div>
+        </div>
+        <div class="specs">
+          HEX&nbsp;&nbsp;#5B21B6<br>
+          RGB&nbsp;&nbsp;91 · 33 · 182<br>
+          CMYK&nbsp;76 · 89 · 0 · 0<br>
+          PANTONE 2102 C
+        </div>
+      </div>
+      <div class="swatch ink">
+        <div><div class="name"><small>Texte</small>Encre</div></div>
+        <div class="specs">#15101F<br>21 · 16 · 31<br>—<br>Texte principal</div>
+      </div>
+      <div class="swatch cream">
+        <div><div class="name"><small>Fond</small>Crème</div></div>
+        <div class="specs">#F6F1E7<br>246 · 241 · 231<br>—<br>Surface principale</div>
+      </div>
+      <div class="swatch lilac">
+        <div><div class="name"><small>Secondaire</small>Lilas</div></div>
+        <div class="specs">#EDE6FB<br>237 · 230 · 251<br>—<br>Surface douce</div>
+      </div>
+      <div class="swatch honey">
+        <div><div class="name"><small>Accent</small>Miel</div></div>
+        <div class="specs">#E9A23B<br>233 · 162 · 59<br>—<br>Récompense / étoile</div>
+      </div>
+    </div>
+    <div class="footmark"><span class="dot"></span> FIDÈLE — BRAND BOOK</div>
+  </section>
+
+
+  <!-- ============ 08 — TYPOGRAPHY ============ -->
+  <section data-screen-label="08 Typographie" class="grain">
+    <div class="slide-no mono">08 — Typographie</div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-end">
+      <div>
+        <div class="eyebrow" style="margin-bottom:14px">Typographie</div>
+        <h2 class="display" style="font-size:88px">Un duo <span class="display-i" style="color:var(--violet)">à la fois éditorial et fonctionnel.</span></h2>
+      </div>
+    </div>
+
+    <div class="type-grid">
+      <div class="type-block">
+        <div class="meta">
+          <div class="name"><small>Display</small>Instrument Serif</div>
+          <div class="mono" style="font-size:13px;letter-spacing:.1em;opacity:.55">REGULAR · ITALIC</div>
+        </div>
+        <div class="face serif">Fid<span style="color:var(--violet)">è</span>le</div>
+        <p class="role">Pour les titres, les manifestes, les moments éditoriaux. L'italique porte le caractère de la marque.</p>
+        <p class="specimen serif">Le café connaît tes habitudes. <em style="color:var(--violet)">Fidèle s'en souvient avec lui.</em></p>
+      </div>
+      <div class="type-block">
+        <div class="meta">
+          <div class="name"><small>Texte &amp; UI</small>DM Sans</div>
+          <div class="mono" style="font-size:13px;letter-spacing:.1em;opacity:.55">300 · 400 · 500 · 600 · 700</div>
+        </div>
+        <div class="face sans">Fidèle</div>
+        <p class="role">Pour les interfaces, les libellés, les boutons. Une grotesque humaine, lisible jusqu'à 11 px.</p>
+        <p class="specimen">Scannez votre QR code pour gagner 10 points. Toutes les visites comptent, même le café de 7 h.</p>
+      </div>
+    </div>
+    <div class="footmark"><span class="dot"></span> FIDÈLE — BRAND BOOK</div>
+  </section>
+
+
+  <!-- ============ 09 — TYPE SCALE ============ -->
+  <section data-screen-label="09 Échelle typo" class="grain">
+    <div class="slide-no mono">09 — Échelle</div>
+    <div class="eyebrow" style="margin-bottom:14px">Échelle typographique</div>
+    <h2 class="display" style="font-size:72px;max-width:1100px">Une grille, <span class="display-i" style="color:var(--violet)">deux familles, six tailles.</span></h2>
+
+    <div style="margin-top:50px">
+      <div class="scale-row">
+        <div class="label">D / 140</div>
+        <div class="sample display-i" style="font-size:140px">Bienvenue à la maison.</div>
+      </div>
+      <div class="scale-row">
+        <div class="label">H1 / 88</div>
+        <div class="sample" style="font-size:88px">Tes 5 derniers cafés sont offerts.</div>
+      </div>
+      <div class="scale-row">
+        <div class="label">H2 / 56</div>
+        <div class="sample sans" style="font-size:56px;font-weight:500;letter-spacing:-.02em">Récompenses du mois</div>
+      </div>
+      <div class="scale-row">
+        <div class="label">H3 / 32</div>
+        <div class="sample sans" style="font-size:32px;font-weight:500">Programme Fidèle — édition Bistro</div>
+      </div>
+      <div class="scale-row">
+        <div class="label">Body / 18</div>
+        <div class="sample sans" style="font-size:18px;line-height:1.5;color:var(--ink-2);max-width:780px">10 points pour 100 MAD dépensés. Profitez de récompenses dès 50 points cumulés. Votre solde est mis à jour à chaque visite, automatiquement.</div>
+      </div>
+      <div class="scale-row">
+        <div class="label">Caps / 13</div>
+        <div class="sample sans" style="font-size:13px;letter-spacing:.18em;text-transform:uppercase;font-weight:500;color:var(--violet)">PROGRAMME FIDÈLE · ÉDITION 2026</div>
+      </div>
+    </div>
+    <div class="footmark"><span class="dot"></span> FIDÈLE — BRAND BOOK</div>
+  </section>
+
+
+  <!-- ============ 10 — ICONOGRAPHY ============ -->
+  <section data-screen-label="10 Iconographie" class="grain on-cream-2">
+    <div class="slide-no mono">10 — Iconographie</div>
+    <div class="eyebrow" style="margin-bottom:14px">Pictogrammes</div>
+    <h2 class="display" style="font-size:80px;max-width:1100px">Un trait, <span class="display-i" style="color:var(--violet)">une intention.</span></h2>
+    <p style="font-family:'Instrument Serif',serif;font-size:24px;line-height:1.4;color:var(--ink-2);margin-top:24px;max-width:780px">
+      Trait 1,6 px sur 24 px. Coins arrondis. Famille linéaire — jamais remplie, pour rester en accord avec le mark.
+    </p>
+
+    <div class="icon-grid">
+      <!-- 1. Point -->
+      <div class="icon-cell">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.4" fill="#15101F" stroke="none"/></svg>
+        <span class="label">Point</span>
+      </div>
+      <!-- 2. Café -->
+      <div class="icon-cell">
+        <svg viewBox="0 0 24 24"><path d="M4 8h12v6a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4V8z"/><path d="M16 10h2a2 2 0 0 1 0 4h-2"/><path d="M7 4c.5 1-.5 1.5 0 2.5M10 4c.5 1-.5 1.5 0 2.5M13 4c.5 1-.5 1.5 0 2.5"/></svg>
+        <span class="label">Café</span>
+      </div>
+      <!-- 3. QR -->
+      <div class="icon-cell">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="6" y="6" width="1" height="1" fill="#15101F" stroke="none"/><rect x="17" y="6" width="1" height="1" fill="#15101F" stroke="none"/><rect x="6" y="17" width="1" height="1" fill="#15101F" stroke="none"/><path d="M14 14h2v2M18 14v3M14 18h2M18 20v1"/></svg>
+        <span class="label">QR Code</span>
+      </div>
+      <!-- 4. Récompense -->
+      <div class="icon-cell">
+        <svg viewBox="0 0 24 24"><rect x="3" y="9" width="18" height="11" rx="1.5"/><path d="M3 13h18M12 9v11M8 9c-2 0-3-1-3-2.5S6 4 8 5s4 4 4 4-2.5 0-4 0z M16 9c2 0 3-1 3-2.5S18 4 16 5s-4 4-4 4 2.5 0 4 0z"/></svg>
+        <span class="label">Cadeau</span>
+      </div>
+      <!-- 5. Star -->
+      <div class="icon-cell">
+        <svg viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.2L12 17l-5.4 3 1-6.2-4.4-4.3 6.1-.9z"/></svg>
+        <span class="label">Étoile</span>
+      </div>
+      <!-- 6. Heart -->
+      <div class="icon-cell">
+        <svg viewBox="0 0 24 24"><path d="M12 20s-7-4.3-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.7-7 10-7 10z"/></svg>
+        <span class="label">Aime</span>
+      </div>
+      <!-- 7. Client -->
+      <div class="icon-cell">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M4 20c1-4 4.5-6 8-6s7 2 8 6"/></svg>
+        <span class="label">Client</span>
+      </div>
+      <!-- 8. Trend -->
+      <div class="icon-cell">
+        <svg viewBox="0 0 24 24"><path d="M3 18l5-6 4 3 9-9"/><path d="M14 6h7v7"/></svg>
+        <span class="label">Croissance</span>
+      </div>
+      <!-- 9. Bell -->
+      <div class="icon-cell">
+        <svg viewBox="0 0 24 24"><path d="M6 16l-1 2h14l-1-2v-5a6 6 0 1 0-12 0v5z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+        <span class="label">Notif.</span>
+      </div>
+      <!-- 10. Wallet -->
+      <div class="icon-cell">
+        <svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M17 14h.5"/></svg>
+        <span class="label">Solde</span>
+      </div>
+      <!-- 11. Calendar -->
+      <div class="icon-cell">
+        <svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="1.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>
+        <span class="label">Visites</span>
+      </div>
+      <!-- 12. Settings -->
+      <div class="icon-cell">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/></svg>
+        <span class="label">Réglages</span>
+      </div>
+      <!-- 13. Chat -->
+      <div class="icon-cell">
+        <svg viewBox="0 0 24 24"><path d="M4 5h16v11H10l-4 4v-4H4z"/></svg>
+        <span class="label">Message</span>
+      </div>
+      <!-- 14. Stamp -->
+      <div class="icon-cell">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="9" r="5"/><path d="M5 16h14v3H5zM9 14l-2 2M15 14l2 2"/></svg>
+        <span class="label">Tampon</span>
+      </div>
+      <!-- 15. Lock -->
+      <div class="icon-cell">
+        <svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="1.5"/><path d="M8 10V7a4 4 0 1 1 8 0v3"/></svg>
+        <span class="label">Sécurité</span>
+      </div>
+      <!-- 16. Share -->
+      <div class="icon-cell">
+        <svg viewBox="0 0 24 24"><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8 11l8-4M8 13l8 4"/></svg>
+        <span class="label">Partager</span>
+      </div>
+    </div>
+    <div class="footmark"><span class="dot"></span> FIDÈLE — BRAND BOOK</div>
+  </section>
+
+
+  <!-- ============ 11 — LOYALTY CARDS ============ -->
+  <section data-screen-label="11 Cartes" class="grain">
+    <div class="slide-no mono">11 — Cartes de fidélité</div>
+    <div class="eyebrow" style="margin-bottom:14px">Cartes</div>
+    <h2 class="display" style="font-size:80px;max-width:1100px">Trois cartes, <span class="display-i" style="color:var(--violet)">trois moments.</span></h2>
+    <p style="font-family:'Instrument Serif',serif;font-size:22px;line-height:1.4;color:var(--ink-2);margin-top:18px;max-width:780px">
+      L'éditoriale pour la rentrée du client, la classique pour le quotidien, la prestige pour les habitués.
+    </p>
+
+    <div class="cards-row">
+      <!-- Card 1: violet, editorial -->
+      <div class="lc violet">
+        <div class="lc-top">
+          <div>
+            <div class="mono" style="font-size:10px;letter-spacing:.22em;text-transform:uppercase;opacity:.7;margin-bottom:8px">Carte Bienvenue</div>
+            <div class="lc-name">Fid<span class="display-i" style="color:var(--honey)">è</span>le</div>
+          </div>
+          <svg viewBox="0 0 100 100" width="50" height="50"><circle cx="50" cy="50" r="42" fill="none" stroke="#F6F1E7" stroke-width="3"/><circle cx="50" cy="50" r="11" fill="#F6F1E7"/></svg>
+        </div>
+        <div class="lc-foot">
+          <div>
+            <small>Membre depuis</small>
+            <div class="holder">Mai 2026</div>
+          </div>
+          <div class="mono" style="font-size:11px;letter-spacing:.16em;opacity:.8">·· 4218</div>
+        </div>
+      </div>
+
+      <!-- Card 2: cream, classic punch card -->
+      <div class="lc cream">
+        <div class="lc-top">
+          <div>
+            <div class="mono" style="font-size:10px;letter-spacing:.22em;text-transform:uppercase;opacity:.55;margin-bottom:8px">Café du Quartier</div>
+            <div class="lc-name" style="color:var(--ink)">Fid<span class="display-i" style="color:var(--violet)">è</span>le</div>
+          </div>
+          <svg viewBox="0 0 100 100" width="50" height="50"><circle cx="50" cy="50" r="42" fill="none" stroke="#5B21B6" stroke-width="3"/><circle cx="50" cy="50" r="11" fill="#5B21B6"/></svg>
+        </div>
+        <div class="stamps" style="color:var(--ink)">
+          <div class="stamp on"><svg viewBox="0 0 24 24" width="18" height="18" stroke-width="2" fill="none" stroke="#F6F1E7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.4" fill="#F6F1E7" stroke="none"/></svg></div>
+          <div class="stamp on"><svg viewBox="0 0 24 24" width="18" height="18" stroke-width="2" fill="none" stroke="#F6F1E7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.4" fill="#F6F1E7" stroke="none"/></svg></div>
+          <div class="stamp on"><svg viewBox="0 0 24 24" width="18" height="18" stroke-width="2" fill="none" stroke="#F6F1E7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.4" fill="#F6F1E7" stroke="none"/></svg></div>
+          <div class="stamp on"><svg viewBox="0 0 24 24" width="18" height="18" stroke-width="2" fill="none" stroke="#F6F1E7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.4" fill="#F6F1E7" stroke="none"/></svg></div>
+          <div class="stamp"></div>
+        </div>
+        <div class="lc-foot">
+          <div>
+            <small>4 / 5 visites</small>
+            <div class="holder" style="font-size:20px">Plus qu'une avant le café offert</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3: ink prestige -->
+      <div class="lc ink">
+        <div class="lc-top">
+          <div>
+            <div class="mono" style="font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--honey);margin-bottom:8px">CARTE PRESTIGE</div>
+            <div class="lc-name">Fid<span class="display-i" style="color:var(--honey)">è</span>le</div>
+          </div>
+          <svg viewBox="0 0 100 100" width="50" height="50"><circle cx="50" cy="50" r="42" fill="none" stroke="#E9A23B" stroke-width="3"/><circle cx="50" cy="50" r="11" fill="#E9A23B"/></svg>
+        </div>
+        <div class="lc-foot">
+          <div>
+            <small style="color:var(--honey)">Titulaire</small>
+            <div class="holder">Yasmine Bennani</div>
+          </div>
+          <div style="text-align:right">
+            <small>Solde</small>
+            <div class="holder" style="color:var(--honey)">1 240 pts</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="footmark"><span class="dot"></span> FIDÈLE — BRAND BOOK</div>
+  </section>
+
+
+  <!-- ============ 12 — SOCIAL ============ -->
+  <section data-screen-label="12 Réseaux sociaux" class="grain on-cream-2">
+    <div class="slide-no mono">12 — Réseaux sociaux</div>
+    <div class="eyebrow" style="margin-bottom:14px">Grille social</div>
+    <h2 class="display" style="font-size:80px;max-width:1100px">Une marque <span class="display-i" style="color:var(--violet)">qui se reconnaît au défilement.</span></h2>
+
+    <div class="social">
+      <!-- Post 1: big italic -->
+      <div class="ig violet">
+        <div class="ig-eyebrow">Lancement</div>
+        <div>
+          <div class="ig-headline">Le café te connaît.<br>Maintenant il te <em style="color:var(--honey)">récompense.</em></div>
+        </div>
+        <div class="ig-foot"><span>@fidele.app</span><svg viewBox="0 0 100 100" width="30" height="30"><circle cx="50" cy="50" r="42" fill="none" stroke="#F6F1E7" stroke-width="5"/><circle cx="50" cy="50" r="13" fill="#F6F1E7"/></svg></div>
+      </div>
+      <!-- Post 2: cream stat -->
+      <div class="ig cream">
+        <div class="ig-eyebrow">Statistique</div>
+        <div>
+          <div class="display-i" style="font-size:170px;line-height:.85;color:var(--violet)">10×</div>
+          <div style="font-family:'Instrument Serif',serif;font-size:28px;line-height:1.2;margin-top:8px">Plus de visites <em>chez les clients Fidèle</em>.</div>
+        </div>
+        <div class="ig-foot"><span>@fidele.app</span><span>01 / 06</span></div>
+      </div>
+      <!-- Post 3: ink quote -->
+      <div class="ig ink">
+        <div class="ig-eyebrow" style="color:var(--honey)">Témoignage</div>
+        <div style="font-family:'Instrument Serif',serif;font-size:38px;line-height:1.15">« Mes habitués reviennent, et ceux qui hésitaient sont devenus <em style="color:var(--honey)">des piliers.</em> »</div>
+        <div class="ig-foot"><span>— Hicham, Café Volubilis</span><span>@fidele.app</span></div>
+      </div>
+      <!-- Post 4: honey CTA -->
+      <div class="ig honey">
+        <div class="ig-eyebrow">Comment ça marche</div>
+        <div style="display:flex;flex-direction:column;gap:14px;font-family:'Instrument Serif',serif;font-size:30px;line-height:1.1">
+          <div><span class="mono" style="font-size:14px;opacity:.65">01.</span> Tu commandes.</div>
+          <div><span class="mono" style="font-size:14px;opacity:.65">02.</span> Tu scannes le QR.</div>
+          <div><span class="mono" style="font-size:14px;opacity:.65">03.</span> Tes <em>points</em> tombent.</div>
+        </div>
+        <div class="ig-foot"><span>@fidele.app</span><span>Simple.</span></div>
+      </div>
+      <!-- Story -->
+      <div class="ig story">
+        <div class="ig-eyebrow">Story</div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center">
+          <svg viewBox="0 0 100 100" width="82" height="82"><circle cx="50" cy="50" r="42" fill="none" stroke="#E9A23B" stroke-width="4"/><circle cx="50" cy="50" r="13" fill="#E9A23B"/></svg>
+          <div class="display-i" style="font-size:46px;line-height:1">+10 pts</div>
+          <div style="font-family:'DM Sans',sans-serif;font-size:13px;letter-spacing:.18em;text-transform:uppercase;opacity:.85">Visite enregistrée</div>
+        </div>
+        <div class="ig-foot" style="justify-content:center"><span style="opacity:.7">@fidele.app</span></div>
+      </div>
+    </div>
+    <div class="footmark"><span class="dot"></span> FIDÈLE — BRAND BOOK</div>
+  </section>
+
+
+  <!-- ============ 13 — STATIONERY ============ -->
+  <section data-screen-label="13 Papeterie" class="grain">
+    <div class="slide-no mono">13 — Papeterie</div>
+    <div class="eyebrow" style="margin-bottom:14px">Papeterie</div>
+    <h2 class="display" style="font-size:72px;max-width:1100px;line-height:1.05">Du papier <span class="display-i" style="color:var(--violet)">à l'imprimante thermique.</span></h2>
+
+    <div class="stationery">
+      <div class="biz-stack">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:20px;letter-spacing:.16em;text-transform:uppercase;opacity:.6">Carte de visite — recto</div>
+        <div class="biz front">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div>
+              <div class="biz-name">Yasmine<br>Bennani</div>
+              <div style="font-family:'DM Sans',sans-serif;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--violet);margin-top:10px">Responsable partenariats</div>
+            </div>
+            <svg viewBox="0 0 100 100" width="54" height="54"><circle cx="50" cy="50" r="42" fill="none" stroke="#5B21B6" stroke-width="3"/><circle cx="50" cy="50" r="11" fill="#5B21B6"/></svg>
+          </div>
+          <div class="biz-contact">
+            yasmine@fidele.app<br>
+            +212 6 12 34 56 78
+          </div>
+        </div>
+      </div>
+
+      <div class="biz-stack">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:20px;letter-spacing:.16em;text-transform:uppercase;opacity:.6">Carte de visite — verso</div>
+        <div class="biz back">
+          <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:20px">
+            <svg viewBox="0 0 100 100" width="70" height="70" style="flex-shrink:0"><circle cx="50" cy="50" r="42" fill="none" stroke="#F6F1E7" stroke-width="3"/><circle cx="50" cy="50" r="11" fill="#F6F1E7"/></svg>
+            <div class="display-i" style="font-size:64px;color:var(--cream);line-height:1">Fidèle</div>
+          </div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:14px;letter-spacing:.16em;text-transform:uppercase;opacity:.75;text-align:center">La fidélité, par cœur.</div>
+        </div>
+      </div>
+
+      <div class="biz-stack">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:20px;letter-spacing:.16em;text-transform:uppercase;opacity:.6">Reçu thermique — 80mm</div>
+        <div class="receipt">
+          <div class="receipt-head">
+            <div class="r-name">Fidèle</div>
+            <div class="r-sub">Café Volubilis · Rabat</div>
+          </div>
+          <div class="receipt-row"><span>1× Cappuccino</span><span>22.00</span></div>
+          <div class="receipt-row"><span>1× Croissant amande</span><span>14.00</span></div>
+          <div class="receipt-row"><span>1× Eau plate</span><span>8.00</span></div>
+          <div class="receipt-row bold"><span>TOTAL MAD</span><span>44.00</span></div>
+
+          <div class="receipt-points">
+            <div class="big">+ 4 pts</div>
+            <small>Solde · 184 pts</small>
+          </div>
+
+          <div style="text-align:center;font-size:11px;letter-spacing:.18em;text-transform:uppercase;opacity:.5;margin-top:18px">
+            Merci de ta visite.<br>fidele.app · #4218
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="footmark"><span class="dot"></span> FIDÈLE — BRAND BOOK</div>
+  </section>
+
+
+  <!-- ============ 14 — CLOSING ============ -->
+  <section data-screen-label="14 Closing" class="closing on-ink grain">
+    <div class="top">
+      <div style="display:flex;align-items:center;gap:14px">
+        <svg viewBox="0 0 100 100" width="44" height="44"><circle cx="50" cy="50" r="42" fill="none" stroke="#F6F1E7" stroke-width="4"/><circle cx="50" cy="50" r="12" fill="#F6F1E7"/></svg>
+        <div class="mono" style="font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--cream);opacity:.7">Fidèle · Brand Book v.01</div>
+      </div>
+      <div class="mono" style="font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--cream);opacity:.7">14 / 14 — Fin</div>
+    </div>
+    <div class="center">
+      <h2>La fidélité, <span class="acc">par cœur.</span></h2>
+    </div>
+    <div class="bottom">
+      <span>© 2026 Fidèle</span>
+      <span>Conçu pour les cafés &amp; bistros de quartier</span>
+      <span>fidele.app</span>
+    </div>
+  </section>
+
+</deck-stage>
+
+<script type="application/json" id="speaker-notes">
+["", "", "", "", "", "", "", "", "", "", "", "", "", ""]
+</script>
+
+<script src="deck-stage.js"></script>
+</body>
+</html>

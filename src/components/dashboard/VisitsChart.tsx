@@ -21,9 +21,9 @@ type Row = { date: string; visites: number }
 function CustomTooltip({ active, payload, label }: TooltipProps<number, string>) {
   if (!active || !payload?.length) return null
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-lg px-3 py-2 text-sm">
-      <p className="text-gray-500 mb-1">{label}</p>
-      <p className="font-bold text-[#185FA5]">
+    <div className="bg-card border border-border rounded-lg shadow-lg px-3 py-2 text-sm">
+      <p className="text-muted-foreground mb-1">{label}</p>
+      <p className="font-bold text-primary">
         {payload[0].value} visite{(payload[0].value ?? 0) > 1 ? 's' : ''}
       </p>
     </div>
@@ -31,14 +31,14 @@ function CustomTooltip({ active, payload, label }: TooltipProps<number, string>)
 }
 
 const PERIODS: { label: string; value: Period }[] = [
-  { label: '7 jours',  value: 7  },
+  { label: '7 jours', value: 7 },
   { label: '30 jours', value: 30 },
-  { label: '3 mois',   value: 90 },
+  { label: '3 mois', value: 90 },
 ]
 
 export default function VisitsChart() {
   const [period, setPeriod] = useState<Period>(30)
-  const [raw, setRaw]       = useState<Row[]>([])
+  const [raw, setRaw] = useState<Row[]>([])
 
   useEffect(() => {
     fetch('/api/visits-chart')
@@ -59,27 +59,26 @@ export default function VisitsChart() {
   const isEmpty = total === 0
 
   return (
-    <Card>
+    <Card className="shadow-card border-none">
       <CardHeader>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <CardTitle>Visites</CardTitle>
-            <p className="text-sm text-gray-500 mt-0.5">
-              <span className="font-semibold text-gray-900">{total}</span> visite{total > 1 ? 's' : ''} sur{' '}
+            <CardTitle className="text-sm eyebrow">Visites</CardTitle>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              <span className="font-bold text-foreground num-mono">{total}</span> visite{total > 1 ? 's' : ''} sur{' '}
               {period === 90 ? '3 mois' : `${period} jours`}
             </p>
           </div>
 
-          <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
+          <div className="flex gap-1 bg-muted p-1 rounded-lg w-fit">
             {PERIODS.map(({ label, value }) => (
               <button
                 key={value}
                 onClick={() => setPeriod(value)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
-                  period === value
-                    ? 'bg-white text-[#185FA5] shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${period === value
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                  }`}
               >
                 {label}
               </button>
@@ -90,37 +89,37 @@ export default function VisitsChart() {
 
       <CardContent>
         {isEmpty ? (
-          <div className="h-[220px] flex items-center justify-center text-sm text-gray-400">
+          <div className="h-[220px] flex items-center justify-center text-sm text-muted-foreground">
             Aucune visite sur cette période.
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={data} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
               <XAxis
                 dataKey="label"
-                tick={{ fontSize: 11, fill: '#9ca3af' }}
+                tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
                 axisLine={false}
                 tickLine={false}
                 interval={tickInterval}
               />
               <YAxis
-                tick={{ fontSize: 11, fill: '#9ca3af' }}
+                tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
                 axisLine={false}
                 tickLine={false}
                 allowDecimals={false}
               />
               <Tooltip
                 content={<CustomTooltip />}
-                cursor={{ stroke: '#185FA5', strokeWidth: 1, strokeDasharray: '4 4' }}
+                cursor={{ stroke: '#5B21B6', strokeWidth: 1, strokeDasharray: '4 4' }}
               />
               <Line
                 type="monotone"
                 dataKey="visites"
-                stroke="#185FA5"
-                strokeWidth={2}
+                stroke="#5B21B6"
+                strokeWidth={3}
                 dot={false}
-                activeDot={{ r: 5, fill: '#185FA5', stroke: '#fff', strokeWidth: 2 }}
+                activeDot={{ r: 5, fill: '#5B21B6', stroke: '#fff', strokeWidth: 2 }}
               />
             </LineChart>
           </ResponsiveContainer>

@@ -1,11 +1,31 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import { Instrument_Serif, DM_Sans, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 
-const inter = Inter({ subsets: ['latin'] })
+const instrumentSerif = Instrument_Serif({
+  subsets: ['latin'],
+  weight: '400',
+  style: ['normal', 'italic'],
+  variable: '--font-display',
+  display: 'swap',
+})
+
+const dmSans = DM_Sans({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700'],
+  variable: '--font-sans',
+  display: 'swap',
+})
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500'],
+  variable: '--font-mono',
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
-  title: 'Taghra — Fidélisation pour restaurants marocains',
+  title: 'Fidèle — Fidélisation pour restaurants marocains',
   description:
     'Plateforme de fidélisation et marketing automatisé pour les restaurants marocains.',
 }
@@ -16,8 +36,11 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="fr">
-      <body className={inter.className}>{children}</body>
+    <html
+      lang="fr"
+      className={`${instrumentSerif.variable} ${dmSans.variable} ${jetbrainsMono.variable}`}
+    >
+      <body className="font-sans">{children}</body>
     </html>
   )
 }

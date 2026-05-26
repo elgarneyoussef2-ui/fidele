@@ -46,10 +46,10 @@ export default async function DashboardPage() {
     .limit(5)
 
   const stats = [
-    { label: 'Total Clients',     value: fmt(totalClients ?? 0), icon: Users,      color: 'text-blue-600',   bg: 'bg-blue-50'   },
-    { label: 'Visites ce mois',   value: fmt(monthVisits  ?? 0), icon: Utensils,   color: 'text-orange-600', bg: 'bg-orange-50' },
-    { label: 'Points distribués', value: fmt(totalPoints),       icon: CreditCard, color: 'text-green-600',  bg: 'bg-green-50'  },
-    { label: 'Clients actifs',    value: fmt(totalClients ?? 0), icon: TrendingUp, color: 'text-purple-600', bg: 'bg-purple-50' },
+    { label: 'Total Clients', value: fmt(totalClients ?? 0), icon: Users, color: 'text-primary', bg: 'bg-primary/10' },
+    { label: 'Visites ce mois', value: fmt(monthVisits ?? 0), icon: Utensils, color: 'text-accent', bg: 'bg-accent/10' },
+    { label: 'Points distribués', value: fmt(totalPoints), icon: CreditCard, color: 'text-green-600', bg: 'bg-green-50' },
+    { label: 'Clients actifs', value: fmt(totalClients ?? 0), icon: TrendingUp, color: 'text-fidele-violet-deep', bg: 'bg-fidele-violet-tint' },
   ]
 
   return (
@@ -57,20 +57,20 @@ export default async function DashboardPage() {
       <div className="p-6 space-y-6 max-w-5xl mx-auto">
 
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{restaurant.name}</h1>
-          <p className="text-gray-500 text-sm mt-0.5">Tableau de bord fidélité</p>
+          <h1 className="text-3xl font-display italic text-foreground leading-none">{restaurant.name}</h1>
+          <p className="eyebrow mt-1 text-primary">Tableau de bord fidélité</p>
         </div>
 
         {/* KPI */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {stats.map(stat => (
-            <Card key={stat.label}>
+            <Card key={stat.label} className="shadow-card border-none">
               <CardContent className="p-4">
                 <div className={`inline-flex p-2 rounded-lg ${stat.bg} ${stat.color} mb-3`}>
                   <stat.icon className="h-4 w-4" />
                 </div>
-                <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                <p className="text-xs text-gray-500 mt-0.5">{stat.label}</p>
+                <p className="text-2xl font-bold text-foreground num-mono">{stat.value}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{stat.label}</p>
               </CardContent>
             </Card>
           ))}
@@ -86,31 +86,31 @@ export default async function DashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <LiveActivityFeed />
 
-          <Card>
+          <Card className="shadow-card border-none">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Top clients</CardTitle>
+              <CardTitle className="text-base eyebrow">Top clients</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {(topClients ?? []).length === 0 && (
-                <p className="text-sm text-gray-400 text-center py-4">Aucun client encore.</p>
+                <p className="text-sm text-muted-foreground text-center py-4">Aucun client encore.</p>
               )}
               {(topClients ?? []).map((client: any, i: number) => {
                 const ini = client.name.split(' ').map((w: string) => w[0]).slice(0, 2).join('').toUpperCase()
                 return (
                   <div key={i} className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500 shrink-0">
+                      <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground shrink-0">
                         {i + 1}
                       </div>
-                      <div className="w-8 h-8 rounded-full bg-[#185FA5]/10 text-[#185FA5] flex items-center justify-center text-xs font-bold shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold shrink-0">
                         {ini}
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-gray-900">{client.name}</p>
-                        <p className="text-xs text-gray-400">{client.total_visits ?? 0} visites</p>
+                        <p className="text-sm font-medium text-foreground">{client.name}</p>
+                        <p className="text-xs text-muted-foreground">{client.total_visits ?? 0} visites</p>
                       </div>
                     </div>
-                    <p className="font-bold text-sm text-[#185FA5]">{fmt(client.points_balance ?? 0)} pts</p>
+                    <p className="font-bold text-sm text-primary num-mono">{fmt(client.points_balance ?? 0)} pts</p>
                   </div>
                 )
               })}

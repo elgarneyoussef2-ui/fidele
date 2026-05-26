@@ -142,7 +142,7 @@ export default function ScannerScreen({ onClose }: { onClose: () => void }) {
           <div style={{
             width: 56, height: 56, borderRadius: 99,
             border: '3px solid rgba(255,255,255,.3)',
-            borderTopColor: '#185FA5',
+            borderTopColor: '#5B21B6',
             animation: 'spin 1s linear infinite',
           }} />
           <p style={{ color: '#fff', fontSize: 15, fontWeight: 600 }}>Activation de la caméra…</p>
@@ -169,10 +169,10 @@ export default function ScannerScreen({ onClose }: { onClose: () => void }) {
           }}>
             {/* Corners */}
             {[
-              { top: 0,   left: 0,  borderTop: '3px solid #185FA5', borderLeft: '3px solid #185FA5',  borderRadius: '12px 0 0 0' },
-              { top: 0,   right: 0, borderTop: '3px solid #185FA5', borderRight: '3px solid #185FA5', borderRadius: '0 12px 0 0' },
-              { bottom: 0, left: 0, borderBottom: '3px solid #185FA5', borderLeft: '3px solid #185FA5',  borderRadius: '0 0 0 12px' },
-              { bottom: 0, right: 0, borderBottom: '3px solid #185FA5', borderRight: '3px solid #185FA5', borderRadius: '0 0 12px 0' },
+              { top: 0,   left: 0,  borderTop: '3px solid #5B21B6', borderLeft: '3px solid #5B21B6',  borderRadius: '12px 0 0 0' },
+              { top: 0,   right: 0, borderTop: '3px solid #5B21B6', borderRight: '3px solid #5B21B6', borderRadius: '0 12px 0 0' },
+              { bottom: 0, left: 0, borderBottom: '3px solid #5B21B6', borderLeft: '3px solid #5B21B6',  borderRadius: '0 0 0 12px' },
+              { bottom: 0, right: 0, borderBottom: '3px solid #5B21B6', borderRight: '3px solid #5B21B6', borderRadius: '0 0 12px 0' },
             ].map((s, i) => (
               <div key={i} style={{ position: 'absolute', width: 32, height: 32, ...s }} />
             ))}
@@ -180,7 +180,7 @@ export default function ScannerScreen({ onClose }: { onClose: () => void }) {
             {/* Scan line */}
             <div style={{
               position: 'absolute', top: 0, left: 8, right: 8, height: 2,
-              background: 'linear-gradient(to right, transparent, #185FA5, transparent)',
+              background: 'linear-gradient(to right, transparent, #5B21B6, transparent)',
               animation: 'scan 2s ease-in-out infinite',
             }} />
             <style>{`@keyframes scan { 0%,100% { top: 0; opacity: 1; } 50% { top: calc(100% - 2px); opacity: .8; } }`}</style>

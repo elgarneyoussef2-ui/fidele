@@ -1,6 +1,7 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* ============================================================
+   FIDÈLE — Design Tokens
+   Coller dans src/app/globals.css à la place du bloc :root actuel
+   ============================================================ */
 
 @layer base {
   :root {
@@ -118,41 +119,5 @@
     box-shadow:
       0 40px 70px -30px rgba(21, 16, 31, 0.45),
       0 6px 24px -10px rgba(21, 16, 31, 0.18);
-  }
-
-  /* Grand titre d'accueil / Hero */
-  .hero-display {
-    font-family: var(--font-display), serif;
-    font-style: italic;
-    font-size: 3.5rem;           /* 56px */
-    line-height: 0.95;
-    letter-spacing: -0.02em;
-    color: var(--foreground);
-  }
-
-  /* Carte de fidélité type "carte bancaire" */
-  .card-loyalty {
-    aspect-ratio: 1.586/1;
-    border-radius: 22px;
-    padding: 24px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    box-shadow: 0 40px 70px -30px rgba(21, 16, 31, 0.45), 0 6px 24px -10px rgba(21, 16, 31, 0.18);
-    position: relative;
-    overflow: hidden;
-  }
-
-  /* Grain de texture */
-  .noise-bg {
-    position: relative;
-  }
-  .noise-bg::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='3' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='.05'/></svg>");
-    mix-blend-mode: multiply;
   }
 }

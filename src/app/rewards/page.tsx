@@ -19,11 +19,11 @@ interface Reward {
 
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-md" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-5 py-4 border-b">
-          <h2 className="font-semibold text-gray-900">{title}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-700"><X className="h-5 w-5" /></button>
+    <div className="fixed inset-0 bg-fidele-ink/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-card rounded-2xl shadow-lc w-full max-w-md border border-border/50" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border/50">
+          <h2 className="font-semibold text-foreground eyebrow">{title}</h2>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors"><X className="h-5 w-5" /></button>
         </div>
         {children}
       </div>
@@ -36,11 +36,11 @@ function RewardModal({ reward, onClose, onSave }: {
   onClose: () => void
   onSave: (data: Omit<Reward, 'id'> & { id?: string }) => Promise<void>
 }) {
-  const [name,        setName]        = useState(reward?.name        ?? '')
+  const [name, setName] = useState(reward?.name ?? '')
   const [description, setDescription] = useState(reward?.description ?? '')
-  const [points_cost, setPointsCost]  = useState(reward?.points_cost != null ? String(reward.points_cost) : '')
-  const [active,      setActive]      = useState(reward?.active ?? true)
-  const [saving,      setSaving]      = useState(false)
+  const [points_cost, setPointsCost] = useState(reward?.points_cost != null ? String(reward.points_cost) : '')
+  const [active, setActive] = useState(reward?.active ?? true)
+  const [saving, setSaving] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -52,26 +52,26 @@ function RewardModal({ reward, onClose, onSave }: {
 
   return (
     <Modal title={reward ? 'Modifier la récompense' : 'Nouvelle récompense'} onClose={onClose}>
-      <form onSubmit={handleSubmit} className="p-5 space-y-4">
+      <form onSubmit={handleSubmit} className="p-6 space-y-4">
         <div className="space-y-1.5">
-          <Label>Nom</Label>
-          <Input value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Dessert gratuit" required />
+          <Label className="text-xs eyebrow text-muted-foreground">Nom de la récompense</Label>
+          <Input value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Dessert gratuit" required className="rounded-xl border-border/60" />
         </div>
         <div className="space-y-1.5">
-          <Label>Description</Label>
-          <Input value={description} onChange={e => setDescription(e.target.value)} placeholder="Détails de la récompense" />
+          <Label className="text-xs eyebrow text-muted-foreground">Description</Label>
+          <Input value={description} onChange={e => setDescription(e.target.value)} placeholder="Détails de la récompense" className="rounded-xl border-border/60" />
         </div>
         <div className="space-y-1.5">
-          <Label>Points requis</Label>
-          <Input type="number" min={1} value={points_cost} onChange={e => setPointsCost(e.target.value)} placeholder="Ex: 200" required />
+          <Label className="text-xs eyebrow text-muted-foreground">Points requis</Label>
+          <Input type="number" min={1} value={points_cost} onChange={e => setPointsCost(e.target.value)} placeholder="Ex: 200" required className="rounded-xl border-border/60 num-mono" />
         </div>
-        <button type="button" onClick={() => setActive(a => !a)} className="flex items-center gap-2.5 w-full text-left">
-          {active ? <ToggleRight className="h-6 w-6 text-[#185FA5]" /> : <ToggleLeft className="h-6 w-6 text-gray-300" />}
-          <span className="text-sm text-gray-700">{active ? 'Récompense active' : 'Récompense inactive'}</span>
+        <button type="button" onClick={() => setActive(a => !a)} className="flex items-center gap-3 w-full text-left py-2 group">
+          {active ? <ToggleRight className="h-7 w-7 text-primary transition-colors" /> : <ToggleLeft className="h-7 w-7 text-muted-foreground/30 transition-colors" />}
+          <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">{active ? 'Récompense active' : 'Récompense inactive'}</span>
         </button>
-        <div className="flex gap-2 pt-2">
-          <Button type="button" variant="outline" className="flex-1" onClick={onClose}>Annuler</Button>
-          <Button type="submit" className="flex-1 bg-[#185FA5] hover:bg-[#124880]" disabled={saving}>
+        <div className="flex gap-3 pt-4">
+          <Button type="button" variant="ghost" className="flex-1 rounded-xl" onClick={onClose}>Annuler</Button>
+          <Button type="submit" className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-sm" disabled={saving}>
             {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Check className="h-4 w-4 mr-1.5" />} Enregistrer
           </Button>
         </div>
@@ -81,9 +81,9 @@ function RewardModal({ reward, onClose, onSave }: {
 }
 
 export default function RewardsPage() {
-  const [rewards,     setRewards]     = useState<Reward[]>([])
-  const [loading,     setLoading]     = useState(true)
-  const [modal,       setModal]       = useState<{ open: boolean; reward: Reward | null }>({ open: false, reward: null })
+  const [rewards, setRewards] = useState<Reward[]>([])
+  const [loading, setLoading] = useState(true)
+  const [modal, setModal] = useState<{ open: boolean; reward: Reward | null }>({ open: false, reward: null })
 
   useEffect(() => {
     fetch('/api/rewards')
@@ -129,50 +129,50 @@ export default function RewardsPage() {
       <div className="p-6 space-y-8 max-w-4xl mx-auto">
 
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Récompenses</h1>
-          <p className="text-gray-500 text-sm mt-0.5">Gérez les récompenses visibles par vos clients.</p>
+          <h1 className="text-3xl font-display italic text-foreground leading-none">Récompenses</h1>
+          <p className="eyebrow mt-1 text-primary">Gérez les récompenses visibles par vos clients.</p>
         </div>
 
         <section>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-gray-800 flex items-center gap-2">
-              <Gift className="h-4 w-4 text-[#185FA5]" /> Récompenses disponibles
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="font-semibold text-foreground flex items-center gap-2">
+              <Gift className="h-4 w-4 text-primary" /> Récompenses disponibles
             </h2>
-            <Button size="sm" className="gap-1.5 text-xs bg-[#185FA5] hover:bg-[#124880]"
+            <Button size="sm" className="gap-1.5 text-xs bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-sm"
               onClick={() => setModal({ open: true, reward: null })}>
               <Plus className="h-3.5 w-3.5" /> Nouvelle récompense
             </Button>
           </div>
 
-          <Card>
+          <Card className="shadow-card border-none overflow-hidden">
             <CardContent className="p-0">
               {loading ? (
-                <div className="py-12 flex justify-center"><Loader2 className="h-6 w-6 animate-spin text-gray-300" /></div>
+                <div className="py-12 flex justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary/20" /></div>
               ) : rewards.length === 0 ? (
-                <div className="py-12 text-center text-gray-400 text-sm">Aucune récompense. Créez-en une !</div>
+                <div className="py-12 text-center text-muted-foreground text-sm">Aucune récompense. Créez-en une !</div>
               ) : (
-                <div className="divide-y">
+                <div className="divide-y divide-border/50">
                   {rewards.map(reward => (
-                    <div key={reward.id} className="flex items-center gap-4 px-5 py-3.5">
-                      <button onClick={() => toggleReward(reward)} className="shrink-0">
-                        {reward.active ? <ToggleRight className="h-6 w-6 text-[#185FA5]" /> : <ToggleLeft className="h-6 w-6 text-gray-300" />}
+                    <div key={reward.id} className="flex items-center gap-4 px-6 py-4 hover:bg-muted/30 transition-colors">
+                      <button onClick={() => toggleReward(reward)} className="shrink-0 transition-opacity hover:opacity-80">
+                        {reward.active ? <ToggleRight className="h-7 w-7 text-primary" /> : <ToggleLeft className="h-7 w-7 text-muted-foreground/30" />}
                       </button>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <p className={`text-sm font-medium truncate ${!reward.active ? 'text-gray-400' : 'text-gray-900'}`}>{reward.name}</p>
-                          {!reward.active && <Badge variant="secondary" className="text-[10px] shrink-0">Inactif</Badge>}
+                          <p className={`text-sm font-semibold truncate ${!reward.active ? 'text-muted-foreground' : 'text-foreground'}`}>{reward.name}</p>
+                          {!reward.active && <Badge variant="secondary" className="text-[10px] shrink-0 uppercase tracking-widest font-bold">Inactif</Badge>}
                         </div>
-                        {reward.description && <p className="text-xs text-gray-400 truncate">{reward.description}</p>}
+                        {reward.description && <p className="text-xs text-muted-foreground truncate mt-0.5">{reward.description}</p>}
                       </div>
-                      <Badge variant="secondary" className="font-semibold shrink-0">{reward.points_cost.toLocaleString()} pts</Badge>
-                      <div className="flex items-center gap-1 shrink-0">
+                      <Badge variant="outline" className="font-bold shrink-0 num-mono bg-primary/5 text-primary border-primary/10 px-3 py-1 rounded-full">{reward.points_cost.toLocaleString()} pts</Badge>
+                      <div className="flex items-center gap-1 shrink-0 ml-2">
                         <button onClick={() => setModal({ open: true, reward })}
-                          className="p-1.5 text-gray-400 hover:text-[#185FA5] rounded hover:bg-blue-50 transition-colors">
-                          <Pencil className="h-3.5 w-3.5" />
+                          className="p-2 text-muted-foreground hover:text-primary rounded-xl hover:bg-primary/5 transition-all">
+                          <Pencil className="h-4 w-4" />
                         </button>
                         <button onClick={() => deleteReward(reward.id)}
-                          className="p-1.5 text-gray-400 hover:text-red-500 rounded hover:bg-red-50 transition-colors">
-                          <X className="h-3.5 w-3.5" />
+                          className="p-2 text-muted-foreground hover:text-destructive rounded-xl hover:bg-destructive/5 transition-all">
+                          <X className="h-4 w-4" />
                         </button>
                       </div>
                     </div>

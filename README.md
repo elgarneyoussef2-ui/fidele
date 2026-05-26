@@ -1,6 +1,6 @@
-# Taghra - Système de Fidélité Client
+# Fidèle - Système de Fidélité Client
 
-Taghra est une plateforme moderne de gestion de fidélité pour les restaurants, permettant de récompenser les clients via un système de points automatisé et des notifications WhatsApp.
+Fidèle est une plateforme moderne de gestion de fidélité pour les restaurants, permettant de récompenser les clients via un système de points automatisé et des notifications WhatsApp.
 
 ## 🚀 Fonctionnalités
 
@@ -60,4 +60,4 @@ Taghra est une plateforme moderne de gestion de fidélité pour les restaurants,
 Le projet utilise les **Row Level Security (RLS)** de Supabase pour garantir que les restaurants ne peuvent accéder qu'à leurs propres données clients et visites.
 
 ---
-Développé avec ❤️ pour Taghra.
+Développé avec ❤️ pour Fidèle.

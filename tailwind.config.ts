@@ -18,6 +18,11 @@ const config: Config = {
       },
     },
     extend: {
+      fontFamily: {
+        display: ['var(--font-display)', 'serif'],
+        sans: ['var(--font-sans)', 'system-ui', 'sans-serif'],
+        mono: ['var(--font-mono)', 'monospace'],
+      },
       colors: {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
@@ -52,11 +57,34 @@ const config: Config = {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
+        fidele: {
+          violet: '#5B21B6',
+          'violet-deep': '#3F1685',
+          'violet-soft': '#C7B8F2',
+          'violet-tint': '#EDE6FB',
+          ink: '#15101F',
+          'ink-2': '#2A2236',
+          cream: '#F6F1E7',
+          'cream-2': '#EFE7D6',
+          paper: '#FFFFFF',
+          honey: '#E9A23B',
+          'honey-deep': '#B5781F',
+        },
+      },
+      boxShadow: {
+        card: '0 30px 60px -30px rgba(21,16,31,.25), 0 4px 18px -8px rgba(21,16,31,.1)',
+        lc: '0 40px 70px -30px rgba(21,16,31,.45), 0 6px 24px -10px rgba(21,16,31,.18)',
+      },
+      letterSpacing: {
+        eyebrow: '0.18em',
+        caps: '0.22em',
+        display: '-0.02em',
       },
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
+        card: '22px',
       },
       keyframes: {
         'accordion-down': {

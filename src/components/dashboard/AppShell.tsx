@@ -7,9 +7,9 @@ import { LayoutDashboard, Gift, QrCode } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const NAV = [
-  { href: '/dashboard',   label: 'Dashboard',   icon: LayoutDashboard },
-  { href: '/generate-qr', label: 'QR Code',     icon: QrCode          },
-  { href: '/rewards',     label: 'Récompenses', icon: Gift             },
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/generate-qr', label: 'QR Code', icon: QrCode },
+  { href: '/rewards', label: 'Récompenses', icon: Gift },
 ]
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
@@ -27,12 +27,14 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     : '…'
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-background">
 
       {/* ── Sidebar desktop ── */}
-      <aside className="hidden md:flex flex-col w-56 bg-white border-r shrink-0">
+      <aside className="hidden md:flex flex-col w-56 bg-card border-r shrink-0">
         <div className="h-14 flex items-center px-5 border-b">
-          <span className="font-bold text-[#185FA5] text-xl tracking-tight">Taghra</span>
+          <span className="wordmark text-2xl tracking-tight text-foreground">
+            Fid<span className="accent">è</span>le
+          </span>
         </div>
 
         <nav className="flex-1 p-3 space-y-0.5 pt-4">
@@ -43,8 +45,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               className={cn(
                 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
                 pathname === href
-                  ? 'bg-[#185FA5] text-white shadow-sm'
-                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
               )}
             >
               <Icon className="h-4 w-4 shrink-0" />
@@ -56,11 +58,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         {/* Bas sidebar */}
         <div className="p-4 border-t">
           <div className="flex items-center gap-2 px-1">
-            <div className="w-7 h-7 rounded-full bg-[#185FA5] flex items-center justify-center shrink-0">
-              <span className="text-white text-[10px] font-bold">{initials}</span>
+            <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center shrink-0">
+              <span className="text-primary-foreground text-[10px] font-bold">{initials}</span>
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-medium text-gray-700 truncate">{restaurantName || '…'}</p>
+              <p className="text-xs font-medium text-foreground truncate">{restaurantName || '…'}</p>
             </div>
           </div>
         </div>
@@ -70,8 +72,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <div className="flex-1 flex flex-col overflow-hidden">
 
         {/* Mobile top bar */}
-        <header className="md:hidden h-14 bg-white border-b flex items-center px-4 shrink-0">
-          <span className="font-bold text-[#185FA5] text-lg">Taghra</span>
+        <header className="md:hidden h-14 bg-card border-b flex items-center px-4 shrink-0">
+          <span className="wordmark text-xl text-foreground">
+            Fid<span className="accent">è</span>le
+          </span>
         </header>
 
         <main className="flex-1 overflow-y-auto">
@@ -79,14 +83,14 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </main>
 
         {/* Mobile bottom nav */}
-        <nav className="md:hidden bg-white border-t flex shrink-0">
+        <nav className="md:hidden bg-card border-t flex shrink-0">
           {NAV.map(({ href, label, icon: Icon }) => (
             <Link
               key={href}
               href={href}
               className={cn(
                 'flex-1 flex flex-col items-center gap-0.5 py-2.5 text-[10px] font-medium transition-colors',
-                pathname === href ? 'text-[#185FA5]' : 'text-gray-400 hover:text-gray-600'
+                pathname === href ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
               )}
             >
               <Icon className="h-5 w-5" />
