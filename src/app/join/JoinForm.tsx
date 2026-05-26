@@ -31,10 +31,10 @@ export default function JoinForm({ token, restaurantId, restaurantName, amount }
 
   useEffect(() => {
     if (step !== 'success') return
-    if (countdown <= 0) { router.push('/client'); return }
+    if (countdown <= 0) { window.location.replace('/client'); return }
     const t = setTimeout(() => setCountdown(c => c - 1), 1000)
     return () => clearTimeout(t)
-  }, [step, countdown, router])
+  }, [step, countdown])
 
   async function submit(clientName: string) {
     setLoading(true)
@@ -102,7 +102,7 @@ export default function JoinForm({ token, restaurantId, restaurantName, amount }
           </div>
         </CardContent>
         <CardFooter className="flex flex-col gap-3">
-          <Button className="w-full bg-[#185FA5] hover:bg-[#124880]" onClick={() => router.push('/client')}>
+          <Button className="w-full bg-[#185FA5] hover:bg-[#124880]" onClick={() => window.location.replace('/client')}>
             Voir mon portefeuille →
           </Button>
           <p className="text-xs text-gray-400">Redirection dans {countdown}s…</p>

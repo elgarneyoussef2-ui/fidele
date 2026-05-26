@@ -164,23 +164,73 @@ function TabBar({ onScan, isHome }: { onScan: () => void; isHome: boolean }) {
 
 // ─── Welcome (no phone stored) ────────────────────────────────────────────────
 
-function WelcomeScreen({ onScan }: { onScan: () => void }) {
+function WelcomeScreen({ onScan, onPhoneLogin }: { onScan: () => void; onPhoneLogin: (phone: string) => void }) {
+  const [phone,  setPhone]  = useState('')
+  const [busy,   setBusy]   = useState(false)
+  const [err,    setErr]    = useState('')
+
+  async function handlePhone(e: React.FormEvent) {
+    e.preventDefault()
+    const p = phone.trim()
+    if (!p) return
+    setBusy(true); setErr('')
+    try {
+      const res  = await fetch(`/api/client/data?phone=${encodeURIComponent(p)}`, { cache: 'no-store' })
+      const data = await res.json()
+      if (!Array.isArray(data) || data.length === 0) {
+        setErr('Aucun compte trouvé pour ce numéro. Scannez un QR code pour créer votre compte.')
+      } else {
+        onPhoneLogin(p)
+      }
+    } catch {
+      setErr('Erreur réseau, réessayez.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
-    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 28px', textAlign: 'center', background: '#F2F2F7' }}>
+    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 28px', background: '#F2F2F7' }}>
       <div style={{ width: 88, height: 88, borderRadius: 28, background: 'linear-gradient(135deg,#185FA5,#0D3E72)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 28, boxShadow: '0 20px 48px -8px rgba(24,95,165,.4)' }}>
         <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
           <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
         </svg>
       </div>
-      <h1 style={{ fontSize: 30, fontWeight: 800, color: '#1C1C1E', letterSpacing: '-.02em', marginBottom: 12 }}>Bienvenue sur Taghra</h1>
-      <p style={{ fontSize: 16, color: '#8E8E93', lineHeight: 1.65, maxWidth: 280, marginBottom: 40 }}>
-        Scannez le QR code de votre restaurant pour commencer à cumuler des points de fidélité.
+      <h1 style={{ fontSize: 30, fontWeight: 800, color: '#1C1C1E', letterSpacing: '-.02em', marginBottom: 10, textAlign: 'center' }}>Bienvenue sur Taghra</h1>
+      <p style={{ fontSize: 15, color: '#8E8E93', lineHeight: 1.6, maxWidth: 280, marginBottom: 36, textAlign: 'center' }}>
+        Accédez à votre portefeuille fidélité.
       </p>
+
+      {/* Phone login */}
+      <form onSubmit={handlePhone} style={{ width: '100%', maxWidth: 340, marginBottom: 20 }}>
+        <p style={{ fontSize: 12, fontWeight: 600, color: '#8E8E93', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 8 }}>J'ai déjà un compte</p>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input
+            type="tel" placeholder="Ex: 0612345678" value={phone}
+            onChange={e => { setPhone(e.target.value); setErr('') }}
+            disabled={busy}
+            style={{ flex: 1, border: '1.5px solid #E5E5EA', borderRadius: 14, padding: '13px 16px', fontSize: 16, fontFamily: 'inherit', outline: 'none', background: '#fff', color: '#1C1C1E' }}
+          />
+          <button type="submit" disabled={busy || !phone.trim()} style={{ background: '#185FA5', color: '#fff', borderRadius: 14, padding: '13px 18px', fontSize: 15, fontWeight: 700, opacity: (!phone.trim() || busy) ? .5 : 1 }}>
+            {busy ? '…' : '→'}
+          </button>
+        </div>
+        {err && <p style={{ fontSize: 13, color: '#EF4444', marginTop: 8 }}>{err}</p>}
+      </form>
+
+      {/* Divider */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', maxWidth: 340, marginBottom: 20 }}>
+        <div style={{ flex: 1, height: 1, background: '#E5E5EA' }} />
+        <span style={{ fontSize: 12, color: '#C7C7CC', fontWeight: 600 }}>OU</span>
+        <div style={{ flex: 1, height: 1, background: '#E5E5EA' }} />
+      </div>
+
+      {/* Scan */}
       <button onClick={onScan} style={{ display: 'inline-flex', alignItems: 'center', gap: 10, background: '#185FA5', color: '#fff', borderRadius: 18, padding: '16px 32px', fontSize: 17, fontWeight: 700, boxShadow: '0 10px 28px rgba(24,95,165,.38)' }}>
         <IconScan /> Scanner un QR code
       </button>
-      <p style={{ marginTop: 20, fontSize: 13, color: '#C7C7CC' }}>
-        Votre historique apparaîtra ici après votre première visite.
+      <p style={{ marginTop: 16, fontSize: 13, color: '#C7C7CC', textAlign: 'center' }}>
+        Première visite ? Scannez le QR code du restaurant.
       </p>
     </div>
   )
@@ -543,11 +593,22 @@ export default function ClientApp() {
 
   if (loading) return <><style>{CSS}</style><Spinner /></>
 
+  function handlePhoneLogin(p: string) {
+    localStorage.setItem('taghra_client_phone', p)
+    setPhone(p)
+    setHasPhone(true)
+    loadData(p)
+  }
+
   if (!hasPhone) return (
     <>
       <style>{CSS}</style>
-      <WelcomeScreen onScan={() => setShowScanner(true)} />
-      {showScanner && <Suspense fallback={null}><ScannerScreen onClose={() => setShowScanner(false)} /></Suspense>}
+      <WelcomeScreen onScan={() => setShowScanner(true)} onPhoneLogin={handlePhoneLogin} />
+      {showScanner && <Suspense fallback={null}><ScannerScreen onClose={() => {
+        setShowScanner(false)
+        const p = localStorage.getItem('taghra_client_phone')
+        if (p) { setPhone(p); setHasPhone(true); loadData(p) }
+      }} /></Suspense>}
     </>
   )
 
