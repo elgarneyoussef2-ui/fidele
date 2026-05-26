@@ -16,11 +16,22 @@ const NAV = [
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const [restaurantName, setRestaurantName] = useState('')
+  const [splash, setSplash] = useState(true)
+  const [splashVisible, setSplashVisible] = useState(true)
 
   useEffect(() => {
     fetch('/api/restaurant')
       .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.name) setRestaurantName(d.name) })
+      .then(d => {
+        if (d?.name) setRestaurantName(d.name)
+        // start fade-out
+        setSplashVisible(false)
+        setTimeout(() => setSplash(false), 500)
+      })
+      .catch(() => {
+        setSplashVisible(false)
+        setTimeout(() => setSplash(false), 500)
+      })
   }, [])
 
   const initials = restaurantName
@@ -29,6 +40,37 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex h-screen bg-background">
+      {splash && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999, background: '#fff',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20,
+          opacity: splashVisible ? 1 : 0, transition: 'opacity 0.5s ease',
+          pointerEvents: splashVisible ? 'auto' : 'none',
+        }}>
+          <style>{`
+            @keyframes pulse-ring {
+              0%   { transform: scale(0.92); opacity: 0.6; }
+              50%  { transform: scale(1.08); opacity: 1; }
+              100% { transform: scale(0.92); opacity: 0.6; }
+            }
+            @keyframes dot-pop {
+              0%, 100% { transform: scale(1); }
+              50%       { transform: scale(1.3); }
+            }
+            .splash-ring { animation: pulse-ring 1.6s ease-in-out infinite; }
+            .splash-dot  { animation: dot-pop  1.6s ease-in-out infinite; }
+          `}</style>
+          <div style={{ color: '#5B21B6' }}>
+            <svg viewBox="0 0 100 100" width="72" height="72" aria-hidden>
+              <circle className="splash-ring" cx="50" cy="50" r="42" fill="none" stroke="currentColor" strokeWidth="3" style={{ transformOrigin: '50px 50px' }} />
+              <circle className="splash-dot"  cx="50" cy="50" r="11" fill="currentColor"  style={{ transformOrigin: '50px 50px' }} />
+            </svg>
+          </div>
+          <span style={{ fontFamily: 'var(--font-display), serif', fontStyle: 'italic', fontSize: 28, letterSpacing: '-0.02em', color: '#15101F' }}>
+            Fid<span style={{ color: '#5B21B6' }}>è</span>le
+          </span>
+        </div>
+      )}
 
       {/* ── Sidebar desktop ── */}
       <aside className="hidden md:flex flex-col w-56 bg-card border-r shrink-0">
