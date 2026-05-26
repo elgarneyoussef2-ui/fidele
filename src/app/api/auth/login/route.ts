@@ -3,6 +3,8 @@ import { createServerClient } from '@supabase/ssr'
 
 export async function POST(req: NextRequest) {
   const { email, password } = await req.json()
+  if (!email || !password)
+    return NextResponse.json({ error: 'Email et mot de passe requis.' }, { status: 400 })
 
   const response = NextResponse.json({ ok: true })
 
@@ -12,10 +14,10 @@ export async function POST(req: NextRequest) {
     {
       cookies: {
         getAll: () => req.cookies.getAll(),
-        setAll: (cookies: { name: string; value: string; options?: Record<string, unknown> }[]) => {
-          cookies.forEach(({ name, value, options }) => {
+        setAll: (cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) => {
+          cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options as any)
-          })
+          )
         },
       },
     }
@@ -23,9 +25,8 @@ export async function POST(req: NextRequest) {
 
   const { error } = await supabase.auth.signInWithPassword({ email, password })
 
-  if (error) {
+  if (error)
     return NextResponse.json({ error: error.message }, { status: 400 })
-  }
 
   return response
 }

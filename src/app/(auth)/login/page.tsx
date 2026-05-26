@@ -5,6 +5,7 @@ import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+
 export default function LoginPage() {
   const [email,    setEmail]    = useState('')
   const [password, setPassword] = useState('')
@@ -28,10 +29,11 @@ export default function LoginPage() {
         setError(data.error ?? 'Identifiants incorrects.')
         setLoading(false)
       } else {
+        // Rechargement complet pour que le middleware lise les cookies de session
         window.location.href = '/dashboard'
       }
     } catch {
-      setError('Erreur réseau.')
+      setError('Erreur réseau. Vérifiez votre connexion.')
       setLoading(false)
     }
   }
@@ -40,7 +42,6 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-100 to-blue-50 p-4">
       <div className="w-full max-w-sm space-y-6">
 
-        {/* Logo */}
         <div className="text-center">
           <div className="inline-block bg-[#185FA5] text-white font-bold text-2xl px-5 py-2 rounded-xl tracking-tight mb-3">
             Taghra
@@ -48,7 +49,6 @@ export default function LoginPage() {
           <p className="text-gray-500 text-sm">Fidélisation pour restaurants marocains</p>
         </div>
 
-        {/* Carte */}
         <div className="bg-white rounded-2xl shadow-sm border p-6 space-y-4">
           <h2 className="text-base font-semibold text-gray-800">Connexion restaurant</h2>
 
