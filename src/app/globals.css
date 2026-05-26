@@ -5,7 +5,7 @@
 @layer base {
   :root {
     /* shadcn/ui mapping */
-    --background: 40 45% 93%;          /* #F6F1E7 crème */
+    --background: 0 0% 100%;            /* #FFFFFF blanc */
     --foreground: 260 32% 9%;          /* #15101F encre */
     --card: 0 0% 100%;                  /* #FFFFFF paper */
     --card-foreground: 260 32% 9%;

@@ -56,7 +56,7 @@ const initials = (s: string) =>
 
 const CSS = `
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { height: 100%; background: #F6F1E7; -webkit-font-smoothing: antialiased; }
+  html, body { height: 100%; background: #fff; -webkit-font-smoothing: antialiased; }
   body { font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, system-ui, sans-serif; color: #15101F; }
   button { font-family: inherit; cursor: pointer; border: none; background: none; -webkit-tap-highlight-color: transparent; }
   button:active { opacity: .75; }
@@ -205,7 +205,7 @@ function WelcomeScreen({ onScan, onPhoneLogin }: { onScan: () => void; onPhoneLo
   const btnSt   = (off: boolean): React.CSSProperties => ({ background: '#5B21B6', color: '#fff', borderRadius: 16, padding: '14px 20px', fontSize: 16, fontWeight: 700, opacity: off ? .4 : 1, transition: 'all .2s', whiteSpace: 'nowrap' as const, flexShrink: 0 })
 
   return (
-    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 28px', background: '#F6F1E7' }}>
+    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 28px', background: '#fff' }}>
       <div style={{ width: 80, height: 80, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 28, color: '#5B21B6' }}>
         <svg viewBox="0 0 100 100" width="80" height="80" aria-label="Fidèle">
           <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" strokeWidth="3" />
@@ -369,7 +369,7 @@ function RestoCard({ client, onClick }: { client: Client; onClick: () => void })
             ? <span style={{ fontSize: 11, color: '#2A2236', opacity: 0.5, fontWeight: 500 }}>encore <span className="num-mono" style={{ fontWeight: 700, color: '#15101F' }}>{prog.toNext}</span> pts → {prog.next.name}</span>
             : <span style={{ fontSize: 11, color: tier.color, fontWeight: 700 }}>Palier maximum ✨</span>}
         </div>
-        <div style={{ height: 6, background: '#F6F1E7', borderRadius: 99, overflow: 'hidden' }}>
+        <div style={{ height: 6, background: '#F0EEF8', borderRadius: 99, overflow: 'hidden' }}>
           <div style={{ height: '100%', width: `${prog.pct}%`, background: tier.color, borderRadius: 99, transition: 'width .6s cubic-bezier(.4,0,.2,1)' }} />
         </div>
       </div>
@@ -489,7 +489,7 @@ function DetailScreen({ client, clientName, onBack }: {
                   return (
                     <div key={r.id} className="card" style={{ opacity: canAfford ? 1 : .5 }}>
                       <div className="card-row" style={{ gap: 16 }}>
-                        <div style={{ width: 44, height: 44, borderRadius: 14, background: canAfford ? '#EDE6FB' : '#F6F1E7', color: canAfford ? '#5B21B6' : '#2A2236', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 22 }}>
+                        <div style={{ width: 44, height: 44, borderRadius: 14, background: canAfford ? '#EDE6FB' : '#F5F5F5', color: canAfford ? '#5B21B6' : '#2A2236', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 22 }}>
                           🎁
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
@@ -529,7 +529,7 @@ function DetailScreen({ client, clientName, onBack }: {
               {client.visits.map((v, i) => (
                 <div key={v.id ?? i} className="card-row">
                   <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                    <div style={{ width: 42, height: 42, borderRadius: 14, background: '#F6F1E7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 20 }}>
+                    <div style={{ width: 42, height: 42, borderRadius: 14, background: '#F5F5F5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 20 }}>
                       🛒
                     </div>
                     <div>
@@ -577,7 +577,7 @@ function DetailScreen({ client, clientName, onBack }: {
 
 function Spinner() {
   return (
-    <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F6F1E7' }}>
+    <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff' }}>
       <div style={{ width: 40, height: 40, borderRadius: '50%', border: '3px solid rgba(91,33,182,.15)', borderTopColor: '#5B21B6', animation: 'spin .8s linear infinite' }} />
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
