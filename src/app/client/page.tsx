@@ -555,114 +555,115 @@ function DetailScreen({ client, clientName, onBack }: {
       )}
     </div>
   )
+}
 
-  // ─── Loading ──────────────────────────────────────────────────────────────────
+// ─── Loading ──────────────────────────────────────────────────────────────────
 
-  function Spinner() {
-    return (
-      <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F2F2F7' }}>
-        <div style={{ width: 40, height: 40, borderRadius: '50%', border: '3px solid #E5E5EA', borderTopColor: '#185FA5', animation: 'spin .8s linear infinite' }} />
-        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-      </div>
-    )
-  }
+function Spinner() {
+  return (
+    <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F2F2F7' }}>
+      <div style={{ width: 40, height: 40, borderRadius: '50%', border: '3px solid #E5E5EA', borderTopColor: '#185FA5', animation: 'spin .8s linear infinite' }} />
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    </div>
+  )
+}
 
-  // ─── App root ─────────────────────────────────────────────────────────────────
+// ─── App root ─────────────────────────────────────────────────────────────────
 
-  export default function ClientApp() {
-    const [clients, setClients] = useState<Client[]>([])
-    const [clientName, setClientName] = useState('')
-    const [phone, setPhone] = useState('')
-    const [screen, setScreen] = useState<'home' | string>('home')
-    const [showScanner, setShowScanner] = useState(false)
-    const [loading, setLoading] = useState(true)
-    const [hasPhone, setHasPhone] = useState(false)
+export default function ClientApp() {
+  const [clients, setClients] = useState<Client[]>([])
+  const [clientName, setClientName] = useState('')
+  const [phone, setPhone] = useState('')
+  const [screen, setScreen] = useState<'home' | string>('home')
+  const [showScanner, setShowScanner] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [hasPhone, setHasPhone] = useState(false)
 
-    // Extracted so it can be called after scan too
-    const loadData = useCallback(async (p: string) => {
-      try {
-        const res = await fetch('/api/client/data', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone: p }),
-        })
-        const d = await res.json()
-        if (Array.isArray(d)) {
-          setClients(d)
-          // Sync name from DB if available
-          if (d.length > 0 && d[0].name) {
-            setClientName(d[0].name)
-            localStorage.setItem('fidele_client_name', d[0].name)
-          }
+  // Extracted so it can be called after scan too
+  const loadData = useCallback(async (p: string) => {
+    try {
+      const res = await fetch('/api/client/data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: p }),
+      })
+      const d = await res.json()
+      if (Array.isArray(d)) {
+        setClients(d)
+        // Sync name from DB if available
+        if (d.length > 0 && d[0].name) {
+          setClientName(d[0].name)
+          localStorage.setItem('fidele_client_name', d[0].name)
         }
-      } catch { }
-    }, [])
+      }
+    } catch { }
+  }, [])
 
-    useEffect(() => {
-      const p = localStorage.getItem('fidele_client_phone')
-      const n = localStorage.getItem('fidele_client_name') ?? ''
-      if (!p) { setLoading(false); return }
-      setPhone(p)
-      setHasPhone(true)
-      setClientName(n)
-      loadData(p).finally(() => setLoading(false))
-    }, [loadData])
+  useEffect(() => {
+    const p = localStorage.getItem('fidele_client_phone')
+    const n = localStorage.getItem('fidele_client_name') ?? ''
+    if (!p) { setLoading(false); return }
+    setPhone(p)
+    setHasPhone(true)
+    setClientName(n)
+    loadData(p).finally(() => setLoading(false))
+  }, [loadData])
 
-    // If screen points to a client that no longer exists, go back home
-    const activeClient = screen !== 'home' ? (clients.find(c => c.id === screen) ?? null) : null
-    useEffect(() => {
-      if (screen !== 'home' && clients.length > 0 && !activeClient) setScreen('home')
-    }, [screen, clients, activeClient])
+  // If screen points to a client that no longer exists, go back home
+  const activeClient = screen !== 'home' ? (clients.find(c => c.id === screen) ?? null) : null
+  useEffect(() => {
+    if (screen !== 'home' && clients.length > 0 && !activeClient) setScreen('home')
+  }, [screen, clients, activeClient])
 
-    function handleScannerClose() {
-      setShowScanner(false)
-      if (phone) loadData(phone)
-    }
-
-    if (loading) return <><style>{CSS}</style><Spinner /></>
-
-    function handlePhoneLogin(p: string) {
-      localStorage.setItem('fidele_client_phone', p)
-      setPhone(p)
-      setHasPhone(true)
-      loadData(p)
-    }
-
-    if (!hasPhone) return (
-      <>
-        <style>{CSS}</style>
-        <WelcomeScreen onScan={() => setShowScanner(true)} onPhoneLogin={handlePhoneLogin} />
-        {showScanner && <Suspense fallback={null}><ScannerScreen onClose={() => {
-          setShowScanner(false)
-          const p = localStorage.getItem('fidele_client_phone')
-          if (p) { setPhone(p); setHasPhone(true); loadData(p) }
-        }} /></Suspense>}
-      </>
-    )
-
-    const isHome = screen === 'home'
-
-    return (
-      <>
-        <style>{CSS}</style>
-        <div className="c-root">
-          <Sidebar isHome={isHome} onScan={() => setShowScanner(true)} />
-          <div className="c-main">
-            <div className="c-scroll">
-              {isHome
-                ? <HomeScreen clients={clients} name={clientName} onOpen={id => setScreen(id)} onScan={() => setShowScanner(true)} />
-                : activeClient
-                  ? <DetailScreen client={activeClient} clientName={clientName} onBack={() => setScreen('home')} />
-                  : null}
-            </div>
-            <TabBar isHome={isHome} onScan={() => setShowScanner(true)} />
-          </div>
-        </div>
-        {showScanner && (
-          <Suspense fallback={null}>
-            <ScannerScreen onClose={handleScannerClose} />
-          </Suspense>
-        )}
-      </>
-    )
+  function handleScannerClose() {
+    setShowScanner(false)
+    if (phone) loadData(phone)
   }
+
+  if (loading) return <><style>{CSS}</style><Spinner /></>
+
+  function handlePhoneLogin(p: string) {
+    localStorage.setItem('fidele_client_phone', p)
+    setPhone(p)
+    setHasPhone(true)
+    loadData(p)
+  }
+
+  if (!hasPhone) return (
+    <>
+      <style>{CSS}</style>
+      <WelcomeScreen onScan={() => setShowScanner(true)} onPhoneLogin={handlePhoneLogin} />
+      {showScanner && <Suspense fallback={null}><ScannerScreen onClose={() => {
+        setShowScanner(false)
+        const p = localStorage.getItem('fidele_client_phone')
+        if (p) { setPhone(p); setHasPhone(true); loadData(p) }
+      }} /></Suspense>}
+    </>
+  )
+
+  const isHome = screen === 'home'
+
+  return (
+    <>
+      <style>{CSS}</style>
+      <div className="c-root">
+        <Sidebar isHome={isHome} onScan={() => setShowScanner(true)} />
+        <div className="c-main">
+          <div className="c-scroll">
+            {isHome
+              ? <HomeScreen clients={clients} name={clientName} onOpen={id => setScreen(id)} onScan={() => setShowScanner(true)} />
+              : activeClient
+                ? <DetailScreen client={activeClient} clientName={clientName} onBack={() => setScreen('home')} />
+                : null}
+          </div>
+          <TabBar isHome={isHome} onScan={() => setShowScanner(true)} />
+        </div>
+      </div>
+      {showScanner && (
+        <Suspense fallback={null}>
+          <ScannerScreen onClose={handleScannerClose} />
+        </Suspense>
+      )}
+    </>
+  )
+}
