@@ -23,8 +23,10 @@ export default function LoginPage() {
     if (result?.error) {
       setError(result.error)
       setLoading(false)
+    } else {
+      // Hard redirect — force le navigateur à envoyer les cookies de session
+      window.location.href = '/dashboard'
     }
-    // Si pas d'erreur, le server action redirige vers /dashboard
   }
 
   return (

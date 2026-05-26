@@ -1,9 +1,8 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
 
-export async function signInAction(email: string, password: string): Promise<{ error: string } | never> {
+export async function signInAction(email: string, password: string): Promise<{ error?: string; success?: boolean }> {
   const supabase = await createClient()
 
   const { error } = await supabase.auth.signInWithPassword({ email, password })
@@ -12,5 +11,5 @@ export async function signInAction(email: string, password: string): Promise<{ e
     return { error: error.message }
   }
 
-  redirect('/dashboard')
+  return { success: true }
 }
