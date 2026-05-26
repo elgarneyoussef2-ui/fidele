@@ -286,12 +286,21 @@ function HomeScreen({ clients, name, onOpen, onScan }: {
       </div>
 
       {/* Hero card */}
-      <div style={{ margin: '24px 20px 0', maxWidth: 420 }}>
+      <div style={{ margin: '24px 20px 0' }}>
         <div style={{
-          borderRadius: 22, padding: 24, display: 'flex', flexDirection: 'column', gap: 24,
+          borderRadius: 22, padding: 28, display: 'flex', flexDirection: 'column', gap: 24,
           background: 'var(--fidele-ink)', color: 'var(--fidele-cream)', border: 'none', position: 'relative', overflow: 'hidden',
           boxShadow: '0 40px 70px -30px rgba(21,16,31,.45), 0 6px 24px -10px rgba(21,16,31,.18)',
         }}>
+          {/* Background logo */}
+          <svg viewBox="0 0 100 100" aria-hidden style={{
+            position: 'absolute', right: -20, top: '50%', transform: 'translateY(-50%)',
+            width: 160, height: 160, color: 'rgba(255,255,255,0.06)', pointerEvents: 'none',
+          }}>
+            <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" strokeWidth="3" />
+            <circle cx="50" cy="50" r="11" fill="currentColor" />
+          </svg>
+
           <div>
             <p className="eyebrow" style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)' }}>Total fidélité</p>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginTop: 8 }}>
@@ -306,7 +315,7 @@ function HomeScreen({ clients, name, onOpen, onScan }: {
                 ? `Dans ${clients.length} restaurant${clients.length > 1 ? 's' : ''}`
                 : 'Scannez pour commencer'}
             </p>
-            <div className="wordmark" style={{ fontSize: 20, opacity: 0.8 }}>
+            <div className="wordmark" style={{ fontSize: 20, opacity: 0.5 }}>
               Fid<span className="accent">è</span>le
             </div>
           </div>
