@@ -32,10 +32,10 @@ export async function GET(req: NextRequest) {
     (clients ?? []).map(async (c: any) => {
       const { data: visits } = await sb
         .from('visits')
-        .select('amount_paid, points_earned, created_at')
+        .select('id, amount_paid, points_earned, created_at')
         .eq('client_id', c.id)
         .order('created_at', { ascending: false })
-        .limit(6)
+        .limit(20)
 
       return { ...c, visits: visits ?? [] }
     })

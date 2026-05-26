@@ -311,7 +311,7 @@ function DetailScreen({ client, clientName, onBack }: {
   const [reqError,   setReqError]   = useState('')
 
   useEffect(() => {
-    fetch(`/api/rewards?restaurantId=${client.restaurant_id}`)
+    fetch(`/api/rewards?restaurantId=${client.restaurant_id}`, { cache: 'no-store' })
       .then(r => r.ok ? r.json() : [])
       .then(d => { setRewards(Array.isArray(d) ? d : []); setRewardsLoaded(true) })
       .catch(() => setRewardsLoaded(true))
@@ -389,9 +389,15 @@ function DetailScreen({ client, clientName, onBack }: {
       <div style={{ padding: '24px 20px' }}>
 
         {/* Rewards */}
-        {rewardsLoaded && rewards.length > 0 && (
+        {rewardsLoaded && (
           <div style={{ marginBottom: 28 }}>
             <p className="section-title">Récompenses disponibles</p>
+            {rewards.length === 0 ? (
+              <div className="card" style={{ padding: '24px 16px', textAlign: 'center' }}>
+                <p style={{ fontSize: 28, marginBottom: 8 }}>🎁</p>
+                <p style={{ fontSize: 14, color: '#8E8E93' }}>Aucune récompense disponible pour ce restaurant.</p>
+              </div>
+            ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {rewards.map(r => {
                 const canAfford = pts >= r.points_cost
@@ -422,6 +428,7 @@ function DetailScreen({ client, clientName, onBack }: {
                 )
               })}
             </div>
+            )}
           </div>
         )}
 
@@ -507,7 +514,7 @@ export default function ClientApp() {
   // Extracted so it can be called after scan too
   const loadData = useCallback(async (p: string) => {
     try {
-      const res = await fetch(`/api/client/data?phone=${encodeURIComponent(p)}`)
+      const res = await fetch(`/api/client/data?phone=${encodeURIComponent(p)}`, { cache: 'no-store' })
       const d   = await res.json()
       if (Array.isArray(d)) setClients(d)
     } catch {}
