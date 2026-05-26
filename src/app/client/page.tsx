@@ -286,8 +286,12 @@ function HomeScreen({ clients, name, onOpen, onScan }: {
       </div>
 
       {/* Hero card */}
-      <div style={{ margin: '24px 20px 0' }}>
-        <div className="card-loyalty noise-bg" style={{ background: 'var(--fidele-ink)', color: 'var(--fidele-cream)', border: 'none' }}>
+      <div style={{ margin: '24px 20px 0', maxWidth: 420 }}>
+        <div style={{
+          borderRadius: 22, padding: 24, display: 'flex', flexDirection: 'column', gap: 24,
+          background: 'var(--fidele-ink)', color: 'var(--fidele-cream)', border: 'none', position: 'relative', overflow: 'hidden',
+          boxShadow: '0 40px 70px -30px rgba(21,16,31,.45), 0 6px 24px -10px rgba(21,16,31,.18)',
+        }}>
           <div>
             <p className="eyebrow" style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)' }}>Total fidélité</p>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginTop: 8 }}>
