@@ -41,5 +41,10 @@ export async function GET(req: NextRequest) {
     })
   )
 
-  return NextResponse.json(withActivity)
+  return NextResponse.json(withActivity, {
+    headers: {
+      'Cache-Control': 'no-store, no-cache, must-revalidate',
+      'Pragma': 'no-cache',
+    },
+  })
 }
