@@ -17,7 +17,7 @@ export default function GenerateQRPage() {
   const [restaurantId, setRestaurantId] = useState<string | null>(null)
 
   useEffect(() => {
-    fetch('/api/auth/me')
+    fetch('/api/restaurant')
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d?.id) setRestaurantId(d.id) })
   }, [])

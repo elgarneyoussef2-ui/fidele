@@ -1,5 +1,3 @@
-import { redirect } from 'next/navigation'
-import { cookies } from 'next/headers'
 import { createAdminClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Users, CreditCard, Utensils, TrendingUp } from 'lucide-react'
@@ -21,18 +19,15 @@ function timeAgo(dateStr: string) {
 }
 
 export default async function DashboardPage() {
-  const cookieStore = cookies()
-  const restaurantId = cookieStore.get('taghra_resto')?.value
-  if (!restaurantId) redirect('/login')
-
   const admin = await createAdminClient()
 
   const { data: restaurant } = await (admin.from('restaurants') as any)
     .select('id, name')
-    .eq('id', restaurantId)
+    .order('created_at', { ascending: true })
+    .limit(1)
     .single()
 
-  if (!restaurant) redirect('/login')
+  if (!restaurant) return <div className="p-8 text-gray-500">Aucun restaurant trouvé.</div>
 
   const rid = restaurant.id
 
