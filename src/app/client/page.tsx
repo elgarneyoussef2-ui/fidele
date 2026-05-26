@@ -5,83 +5,142 @@ import { useRouter } from 'next/navigation'
 
 const ScannerScreen = lazy(() => import('./ScannerScreen'))
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-type Visit = { amount_paid: number; points_earned: number; created_at: string }
-type ClientRecord = {
-  id: string
-  restaurant_id: string
-  name: string
-  phone: string
-  points_balance: number
-  total_visits: number
-  last_visit_at: string | null
+type Visit  = { amount_paid: number; points_earned: number; created_at: string }
+type Client = {
+  id: string; restaurant_id: string; name: string; phone: string
+  points_balance: number; total_visits: number; last_visit_at: string | null
   restaurants: { id: string; name: string }
   visits: Visit[]
 }
-type Reward = { id: string; name: string; description: string; points_cost: number; active: boolean }
+type Reward = { id: string; name: string; description: string; points_cost: number }
 
-// ─── Tier helpers ─────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const TIERS = [
-  { id: 'bronze', name: 'Bronze', min: 0,    max: 500,  color: '#B45309', soft: '#FEF3C7', deep: '#7C2D12' },
-  { id: 'argent', name: 'Argent', min: 501,  max: 1000, color: '#64748B', soft: '#F1F5F9', deep: '#334155' },
-  { id: 'or',     name: 'Or',     min: 1001, max: null, color: '#CA8A04', soft: '#FEF9C3', deep: '#713F12' },
+  { name: 'Bronze', min: 0,    max: 500,  color: '#D97706', bg: '#FFFBEB', dot: '#D97706' },
+  { name: 'Argent', min: 501,  max: 1000, color: '#64748B', bg: '#F8FAFC', dot: '#94A3B8' },
+  { name: 'Or',     min: 1001, max: null, color: '#B45309', bg: '#FEFCE8', dot: '#CA8A04' },
 ]
+const tierFor  = (p: number) => TIERS.find(t => p >= t.min && (t.max == null || p <= t.max)) ?? TIERS[0]
+const nextTier = (p: number) => { const i = TIERS.indexOf(tierFor(p)); return TIERS[i + 1] ?? null }
+const progress = (p: number) => {
+  const t = tierFor(p); const n = nextTier(p)
+  if (!n) return { pct: 100, toNext: 0, next: null }
+  return { pct: Math.round(((p - t.min) / (n.min - t.min)) * 100), toNext: n.min - p, next: n }
+}
+const ago = (iso: string) => {
+  const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000)
+  if (m < 1)  return 'À l\'instant'
+  if (m < 60) return `${m} min`
+  const h = Math.floor(m / 60)
+  if (h < 24) return `${h}h`
+  return `${Math.floor(h / 24)}j`
+}
+const ini = (name: string) => name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
 
-function tierFor(pts: number) {
-  return TIERS.find(t => pts >= t.min && (t.max == null || pts <= t.max)) || TIERS[0]
-}
-function nextTierFor(pts: number) {
-  const t = tierFor(pts); const idx = TIERS.indexOf(t); return TIERS[idx + 1] || null
-}
-function progressInTier(pts: number) {
-  const t = tierFor(pts); const nxt = nextTierFor(pts)
-  if (!nxt) return { pct: 100, toNext: 0, next: null }
-  return { pct: Math.min(100, Math.round(((pts - t.min) / (nxt.min - t.min)) * 100)), toNext: nxt.min - pts, next: nxt }
-}
-function timeAgo(iso: string) {
-  const min = Math.floor((Date.now() - new Date(iso).getTime()) / 60000)
-  if (min < 1) return 'À l\'instant'
-  if (min < 60) return `Il y a ${min} min`
-  const h = Math.floor(min / 60)
-  if (h < 24) return `Il y a ${h}h`
-  const d = Math.floor(h / 24)
-  if (d < 30) return `Il y a ${d}j`
-  return `Il y a ${Math.floor(d / 30)} mois`
-}
+// ─── CSS ──────────────────────────────────────────────────────────────────────
 
-// ─── Atoms ───────────────────────────────────────────────────────────────────
+const BASE_CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: #F5F5F7; -webkit-font-smoothing: antialiased; }
+  body { font-family: 'Inter', system-ui, sans-serif; color: #1C1C1E; }
+  button { font-family: inherit; cursor: pointer; border: none; background: none; }
+  button:active { transform: scale(.97); transition: transform .1s; }
 
-function ProgressBar({ pct, color = '#185FA5', track = '#E5E7EB', height = 6 }: { pct: number; color?: string; track?: string; height?: number }) {
+  .app-root    { display: flex; min-height: 100dvh; background: #F5F5F7; }
+  .sidebar     { display: none; }
+  .main        { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  .scroll-area { flex: 1; overflow-y: auto; padding-bottom: 80px; }
+  .tab-bar     {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
+    background: rgba(255,255,255,.88); backdrop-filter: blur(24px) saturate(180%);
+    border-top: .5px solid rgba(0,0,0,.1);
+    display: flex;
+    padding: 8px 0 calc(8px + env(safe-area-inset-bottom, 0px));
+  }
+  .tab-btn     { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 4px 0; }
+  .tab-label   { font-size: 10px; font-weight: 600; letter-spacing: .01em; }
+
+  @media (min-width: 1024px) {
+    .sidebar { display: flex; flex-direction: column; width: 240px; flex-shrink: 0;
+               background: #fff; border-right: 1px solid #E5E5EA;
+               position: sticky; top: 0; height: 100dvh; }
+    .tab-bar { display: none; }
+    .scroll-area { padding-bottom: 32px; }
+  }
+`
+
+// ─── Sidebar (desktop) ────────────────────────────────────────────────────────
+
+function Sidebar({ tab, onScan }: { tab: 'home' | 'scan'; onScan: () => void }) {
+  const items = [
+    { id: 'home', label: 'Accueil',  path: 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2h-4v-7H9v7H5a2 2 0 0 1-2-2z' },
+    { id: 'scan', label: 'Scanner',  path: null },
+  ]
   return (
-    <div style={{ height, background: track, borderRadius: 99, overflow: 'hidden' }}>
-      <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: 99, transition: 'width .6s cubic-bezier(.4,0,.2,1)' }} />
+    <div className="sidebar">
+      <div style={{ padding: '28px 20px 20px', borderBottom: '1px solid #F2F2F7' }}>
+        <div style={{ fontSize: 20, fontWeight: 800, color: '#185FA5' }}>Taghra</div>
+        <div style={{ fontSize: 12, color: '#8E8E93', marginTop: 2 }}>Portefeuille fidélité</div>
+      </div>
+      <nav style={{ padding: '12px 10px', flex: 1 }}>
+        {items.map(item => (
+          <button key={item.id}
+            onClick={item.id === 'scan' ? onScan : undefined}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, marginBottom: 2, background: tab === item.id ? '#EBF3FF' : 'transparent', color: tab === item.id ? '#185FA5' : '#6B7280', fontWeight: tab === item.id ? 600 : 500, fontSize: 14, textAlign: 'left' }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              {item.path
+                ? <path d={item.path}/>
+                : <><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></>}
+            </svg>
+            {item.label}
+          </button>
+        ))}
+      </nav>
     </div>
   )
 }
 
-function TierBadge({ points }: { points: number }) {
-  const tier = tierFor(points)
+// ─── Tab bar (mobile) ─────────────────────────────────────────────────────────
+
+function TabBar({ tab, onScan }: { tab: 'home' | 'scan'; onScan: () => void }) {
+  const tabs = [
+    { id: 'home',  label: 'Accueil',  onClick: undefined,
+      icon: <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2h-4v-7H9v7H5a2 2 0 0 1-2-2z"/> },
+    { id: 'scan',  label: 'Scanner',  onClick: onScan,
+      icon: <><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></> },
+  ]
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 9px', borderRadius: 999, fontSize: 11, fontWeight: 700, background: tier.soft, color: tier.deep, border: `1px solid ${tier.color}33` }}>
-      <span style={{ width: 7, height: 7, borderRadius: 99, background: tier.color, display: 'inline-block' }} />
-      {tier.name}
-    </span>
+    <nav className="tab-bar">
+      {tabs.map(t => (
+        <button key={t.id} className="tab-btn" onClick={t.onClick}
+          style={{ color: tab === t.id ? '#185FA5' : '#8E8E93' }}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{t.icon}</svg>
+          <span className="tab-label">{t.label}</span>
+        </button>
+      ))}
+    </nav>
   )
 }
 
-// ─── Welcome ─────────────────────────────────────────────────────────────────
+// ─── Welcome ──────────────────────────────────────────────────────────────────
 
 function WelcomeScreen({ onScan }: { onScan: () => void }) {
   return (
-    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 24px', textAlign: 'center', background: '#F2F2F7' }}>
-      <div style={{ fontSize: 64, marginBottom: 16 }}>🌟</div>
-      <div style={{ fontSize: 26, fontWeight: 700, color: '#0A0A0A', letterSpacing: '-.01em', fontFamily: '"Source Serif 4", Georgia, serif' }}>Bienvenue sur Taghra</div>
-      <div style={{ fontSize: 15, color: '#8E8E93', marginTop: 10, lineHeight: 1.6, maxWidth: 280 }}>
-        Scannez le QR code affiché par votre restaurant pour commencer à cumuler des points.
+    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', textAlign: 'center' }}>
+      <div style={{ width: 80, height: 80, borderRadius: 24, background: 'linear-gradient(135deg, #185FA5, #0F4C75)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24, boxShadow: '0 16px 40px rgba(24,95,165,.3)' }}>
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+        </svg>
       </div>
-      <button onClick={onScan} style={{ marginTop: 32, background: '#185FA5', color: '#fff', border: 'none', borderRadius: 16, padding: '16px 32px', fontSize: 16, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
+      <h1 style={{ fontSize: 28, fontWeight: 800, color: '#1C1C1E', marginBottom: 10, letterSpacing: '-.02em' }}>Bienvenue sur Taghra</h1>
+      <p style={{ fontSize: 15, color: '#8E8E93', lineHeight: 1.6, maxWidth: 260, marginBottom: 36 }}>
+        Scannez le QR code de votre restaurant pour commencer à cumuler des points fidélité.
+      </p>
+      <button onClick={onScan} style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#185FA5', color: '#fff', borderRadius: 16, padding: '15px 28px', fontSize: 16, fontWeight: 700, boxShadow: '0 8px 24px rgba(24,95,165,.35)' }}>
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
         </svg>
@@ -91,77 +150,80 @@ function WelcomeScreen({ onScan }: { onScan: () => void }) {
   )
 }
 
-// ─── Wallet ───────────────────────────────────────────────────────────────────
+// ─── Home / Wallet ────────────────────────────────────────────────────────────
 
-function WalletScreen({ clients, clientName, onOpen }: { clients: ClientRecord[]; clientName: string; onOpen: (id: string) => void }) {
+function HomeScreen({ clients, name, onOpen }: { clients: Client[]; name: string; onOpen: (id: string) => void }) {
   const total = clients.reduce((s, c) => s + (c.points_balance || 0), 0)
 
   return (
-    <div className="fidele-content" style={{ background: '#F2F2F7', minHeight: '100%' }}>
-      <div style={{ padding: '24px 20px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+    <div style={{ padding: '0 0 8px' }}>
+      {/* Header */}
+      <div style={{ padding: '24px 20px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <div style={{ fontSize: 13, color: '#8E8E93', fontWeight: 500 }}>Bonjour</div>
-          <div style={{ fontSize: 22, fontWeight: 700, color: '#0A0A0A', letterSpacing: '-.01em' }}>{clientName}</div>
+          <p style={{ fontSize: 13, color: '#8E8E93', fontWeight: 500 }}>Bonjour</p>
+          <h2 style={{ fontSize: 24, fontWeight: 800, color: '#1C1C1E', letterSpacing: '-.02em', marginTop: 1 }}>{name}</h2>
         </div>
-        <div style={{ width: 36, height: 36, borderRadius: 99, background: 'linear-gradient(135deg, #185FA5, #0F4C75)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 13 }}>
-          {clientName.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()}
+        <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(135deg, #185FA5, #0F4C75)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 14 }}>
+          {ini(name)}
         </div>
       </div>
 
-      <div style={{ padding: '8px 20px 0' }}>
-        <div style={{ background: 'linear-gradient(135deg, #0F2A5C 0%, #185FA5 55%, #2A75C2 100%)', borderRadius: 24, padding: '22px 22px 20px', color: '#fff', position: 'relative', overflow: 'hidden', boxShadow: '0 24px 36px -16px rgba(24,95,165,.4)' }}>
-          <div style={{ position: 'absolute', right: -40, top: -40, width: 140, height: 140, borderRadius: 99, background: 'radial-gradient(circle, #F2C84B 0%, transparent 70%)', opacity: .35, pointerEvents: 'none' }} />
-          <div style={{ fontSize: 11, letterSpacing: '.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,.65)', fontWeight: 600 }}>Portefeuille fidélité</div>
-          <div style={{ marginTop: 10, display: 'flex', alignItems: 'baseline', gap: 10 }}>
-            <div style={{ fontSize: 52, fontWeight: 700, lineHeight: 1, fontFamily: '"Source Serif 4", Georgia, serif', letterSpacing: '-.02em' }}>{total.toLocaleString('fr-FR')}</div>
-            <div style={{ fontSize: 14, color: 'rgba(255,255,255,.7)', fontWeight: 500 }}>points</div>
+      {/* Balance card */}
+      <div style={{ margin: '16px 20px 0' }}>
+        <div style={{ background: 'linear-gradient(135deg, #0F2A5C 0%, #185FA5 60%, #2176C2 100%)', borderRadius: 22, padding: '22px', color: '#fff', boxShadow: '0 20px 48px -12px rgba(24,95,165,.5)', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: -30, right: -30, width: 120, height: 120, borderRadius: '50%', background: 'rgba(255,255,255,.06)' }} />
+          <div style={{ position: 'absolute', bottom: -20, right: 30, width: 80, height: 80, borderRadius: '50%', background: 'rgba(255,255,255,.04)' }} />
+          <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,.6)' }}>Total fidélité</p>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 8 }}>
+            <span style={{ fontSize: 56, fontWeight: 800, lineHeight: 1, letterSpacing: '-.03em' }}>{total.toLocaleString('fr-FR')}</span>
+            <span style={{ fontSize: 16, color: 'rgba(255,255,255,.6)', fontWeight: 500 }}>pts</span>
           </div>
-          <div style={{ marginTop: 6, fontSize: 13, color: 'rgba(255,255,255,.7)' }}>
-            cumulés dans <strong style={{ color: '#fff' }}>{clients.length} restaurant{clients.length > 1 ? 's' : ''}</strong>
-          </div>
+          <p style={{ fontSize: 13, color: 'rgba(255,255,255,.6)', marginTop: 6 }}>
+            dans {clients.length} restaurant{clients.length > 1 ? 's' : ''}
+          </p>
         </div>
       </div>
 
-      <div style={{ padding: '24px 20px 8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ fontSize: 18, fontWeight: 700, color: '#0A0A0A', letterSpacing: '-.01em' }}>Mes restaurants</div>
-        <div style={{ fontSize: 13, color: '#185FA5', fontWeight: 600 }}>{clients.length}</div>
-      </div>
-
-      <div className="resto-grid" style={{ padding: '0 20px' }}>
-        {clients.map(c => <RestoCard key={c.id} client={c} onClick={() => onOpen(c.id)} />)}
+      {/* Restaurant list */}
+      <div style={{ padding: '24px 20px 0' }}>
+        <p style={{ fontSize: 13, fontWeight: 600, color: '#8E8E93', letterSpacing: '.04em', textTransform: 'uppercase', marginBottom: 12 }}>Mes restaurants</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {clients.map(c => <RestoCard key={c.id} client={c} onClick={() => onOpen(c.id)} />)}
+        </div>
       </div>
     </div>
   )
 }
 
-function RestoCard({ client, onClick }: { client: ClientRecord; onClick: () => void }) {
-  const tier = tierFor(client.points_balance)
-  const prog = progressInTier(client.points_balance)
-  const name = client.restaurants?.name ?? '—'
+function RestoCard({ client, onClick }: { client: Client; onClick: () => void }) {
+  const tier  = tierFor(client.points_balance)
+  const prog  = progress(client.points_balance)
+  const rName = client.restaurants?.name ?? '—'
 
   return (
-    <button onClick={onClick} style={{ background: '#fff', borderRadius: 20, padding: 16, border: '1px solid rgba(0,0,0,.06)', cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,.04), 0 4px 14px rgba(0,0,0,.04)', textAlign: 'left', display: 'block', width: '100%' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <div style={{ width: 44, height: 44, borderRadius: 14, background: 'linear-gradient(135deg, #185FA5, #0F4C75)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: '"Source Serif 4", Georgia, serif', fontWeight: 600, fontSize: 20, flexShrink: 0 }}>
-          {name[0]?.toUpperCase()}
+    <button onClick={onClick} style={{ background: '#fff', borderRadius: 18, padding: '16px', border: '1px solid rgba(0,0,0,.06)', textAlign: 'left', display: 'block', width: '100%', boxShadow: '0 2px 12px rgba(0,0,0,.06)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+        <div style={{ width: 46, height: 46, borderRadius: 14, background: 'linear-gradient(135deg, #185FA5, #0F4C75)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 20, flexShrink: 0 }}>
+          {rName[0]?.toUpperCase()}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: '#0A0A0A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</div>
-          <div style={{ fontSize: 12, color: '#8E8E93', marginTop: 2 }}>{client.total_visits ?? 0} visite{(client.total_visits ?? 0) > 1 ? 's' : ''}</div>
+          <p style={{ fontSize: 15, fontWeight: 700, color: '#1C1C1E', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{rName}</p>
+          <p style={{ fontSize: 12, color: '#8E8E93', marginTop: 2 }}>{client.total_visits ?? 0} visite{(client.total_visits ?? 0) > 1 ? 's' : ''}</p>
         </div>
         <div style={{ textAlign: 'right', flexShrink: 0 }}>
-          <div style={{ fontSize: 22, fontWeight: 700, color: '#0A0A0A', lineHeight: 1, fontFamily: '"Source Serif 4", Georgia, serif' }}>{(client.points_balance || 0).toLocaleString('fr-FR')}</div>
-          <div style={{ fontSize: 10, color: '#8E8E93', marginTop: 3, letterSpacing: '.08em', textTransform: 'uppercase', fontWeight: 600 }}>pts</div>
+          <p style={{ fontSize: 24, fontWeight: 800, color: '#1C1C1E', lineHeight: 1, letterSpacing: '-.02em' }}>{(client.points_balance || 0).toLocaleString('fr-FR')}</p>
+          <p style={{ fontSize: 10, color: '#8E8E93', marginTop: 2, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em' }}>pts</p>
         </div>
       </div>
-      <div style={{ marginTop: 14 }}>
+      {/* Progress */}
+      <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-          <TierBadge points={client.points_balance} />
-          <div style={{ fontSize: 11, color: '#8E8E93', fontWeight: 500 }}>
-            {prog.next ? <span>+{prog.toNext} pts → <span style={{ color: prog.next.deep, fontWeight: 600 }}>{prog.next.name}</span></span> : 'Palier maximum'}
-          </div>
+          <span style={{ fontSize: 11, fontWeight: 700, color: tier.color, background: tier.bg, padding: '2px 8px', borderRadius: 99 }}>{tier.name}</span>
+          {prog.next && <span style={{ fontSize: 11, color: '#8E8E93' }}>+{prog.toNext} pts → {prog.next.name}</span>}
         </div>
-        <ProgressBar pct={prog.pct} color={tier.color} track="#F2F2F7" height={5} />
+        <div style={{ height: 4, background: '#F2F2F7', borderRadius: 99, overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: `${prog.pct}%`, background: tier.color, borderRadius: 99, transition: 'width .6s ease' }} />
+        </div>
       </div>
     </button>
   )
@@ -169,10 +231,10 @@ function RestoCard({ client, onClick }: { client: ClientRecord; onClick: () => v
 
 // ─── Restaurant detail ────────────────────────────────────────────────────────
 
-function RestoScreen({ client, clientName, onBack }: { client: ClientRecord; clientName: string; onBack: () => void }) {
-  const tier = tierFor(client.points_balance)
-  const prog = progressInTier(client.points_balance)
-  const name = client.restaurants?.name ?? '—'
+function DetailScreen({ client, clientName, onBack }: { client: Client; clientName: string; onBack: () => void }) {
+  const tier  = tierFor(client.points_balance)
+  const prog  = progress(client.points_balance)
+  const rName = client.restaurants?.name ?? '—'
 
   const [rewards,    setRewards]    = useState<Reward[]>([])
   const [confirming, setConfirming] = useState<Reward | null>(null)
@@ -181,137 +243,130 @@ function RestoScreen({ client, clientName, onBack }: { client: ClientRecord; cli
 
   useEffect(() => {
     fetch(`/api/rewards?restaurantId=${client.restaurant_id}`)
-      .then(r => r.json())
-      .then(data => setRewards(Array.isArray(data) ? data : []))
-      .catch(() => {})
+      .then(r => r.ok ? r.json() : [])
+      .then(d => setRewards(Array.isArray(d) ? d : []))
   }, [client.restaurant_id])
 
-  async function requestReward(reward: Reward) {
+  async function requestReward(r: Reward) {
     setSending(true)
     await fetch('/api/redemption', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        clientId:     client.id,
-        restaurantId: client.restaurant_id,
-        rewardId:     reward.id,
-        rewardName:   reward.name,
-        rewardPoints: reward.points_cost,
-        clientName:   clientName,
-      }),
+      body: JSON.stringify({ clientId: client.id, restaurantId: client.restaurant_id, rewardId: r.id, rewardName: r.name, rewardPoints: r.points_cost, clientName }),
     })
-    setSent(prev => new Set(prev).add(reward.id))
+    setSent(prev => new Set(prev).add(r.id))
     setConfirming(null)
     setSending(false)
   }
 
   return (
-    <div className="fidele-content" style={{ background: '#F2F2F7', minHeight: '100%' }}>
+    <div>
       {/* Hero */}
-      <div style={{ background: 'linear-gradient(135deg, #185FA5 0%, #0F4C75 60%, #0A2540 100%)', padding: '24px 20px 22px', color: '#fff', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 80% 0%, rgba(255,255,255,.14), transparent 50%)', pointerEvents: 'none' }} />
-        <button onClick={onBack} style={{ width: 36, height: 36, borderRadius: 99, background: 'rgba(255,255,255,.18)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,.2)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      <div style={{ background: 'linear-gradient(160deg, #0F2A5C 0%, #185FA5 100%)', padding: '20px 20px 24px', color: '#fff' }}>
+        <button onClick={onBack} style={{ width: 34, height: 34, borderRadius: '50%', background: 'rgba(255,255,255,.15)', border: '1px solid rgba(255,255,255,.2)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
         </button>
 
-        <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ width: 56, height: 56, borderRadius: 16, background: 'rgba(255,255,255,.14)', border: '1px solid rgba(255,255,255,.25)', backdropFilter: 'blur(20px)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontFamily: '"Source Serif 4", Georgia, serif', fontWeight: 600, fontSize: 28 }}>
-            {name[0]?.toUpperCase()}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 16, marginBottom: 20 }}>
+          <div style={{ width: 52, height: 52, borderRadius: 16, background: 'rgba(255,255,255,.15)', border: '1px solid rgba(255,255,255,.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 26, flexShrink: 0 }}>
+            {rName[0]?.toUpperCase()}
           </div>
           <div>
-            <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-.01em', fontFamily: '"Source Serif 4", Georgia, serif' }}>{name}</div>
-            <div style={{ fontSize: 13, color: 'rgba(255,255,255,.75)', marginTop: 2 }}>{client.total_visits ?? 0} visite{(client.total_visits ?? 0) > 1 ? 's' : ''}</div>
+            <h2 style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-.02em' }}>{rName}</h2>
+            <p style={{ fontSize: 13, color: 'rgba(255,255,255,.65)', marginTop: 2 }}>{client.total_visits ?? 0} visite{(client.total_visits ?? 0) > 1 ? 's' : ''}</p>
           </div>
         </div>
 
-        <div style={{ marginTop: 20, background: 'rgba(255,255,255,.12)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,.18)', borderRadius: 18, padding: '16px 18px' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
+        {/* Balance */}
+        <div style={{ background: 'rgba(255,255,255,.1)', border: '1px solid rgba(255,255,255,.15)', borderRadius: 18, padding: '16px 18px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 14 }}>
             <div>
-              <div style={{ fontSize: 11, letterSpacing: '.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,.65)', fontWeight: 600 }}>Votre solde</div>
-              <div style={{ fontSize: 44, fontWeight: 700, lineHeight: 1, marginTop: 6, fontFamily: '"Source Serif 4", Georgia, serif' }}>
-                {(client.points_balance || 0).toLocaleString('fr-FR')}
-                <span style={{ fontSize: 14, color: 'rgba(255,255,255,.7)', fontWeight: 500, marginLeft: 6 }}>pts</span>
+              <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,.55)' }}>Solde</p>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 4 }}>
+                <span style={{ fontSize: 48, fontWeight: 800, lineHeight: 1, letterSpacing: '-.03em' }}>{(client.points_balance || 0).toLocaleString('fr-FR')}</span>
+                <span style={{ fontSize: 14, color: 'rgba(255,255,255,.55)', fontWeight: 500 }}>pts</span>
               </div>
             </div>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 999, fontSize: 12, fontWeight: 700, background: '#fff', color: tier.deep }}>
-              <span style={{ width: 7, height: 7, borderRadius: 99, background: tier.color, display: 'inline-block' }} />
-              {tier.name}
-            </span>
+            <span style={{ background: '#fff', color: tier.color, fontSize: 12, fontWeight: 700, padding: '5px 11px', borderRadius: 99 }}>{tier.name}</span>
           </div>
-          <div style={{ marginTop: 14 }}>
-            <ProgressBar pct={prog.pct} color="#F2C84B" track="rgba(255,255,255,.18)" height={6} />
-            <div style={{ marginTop: 8, fontSize: 12, color: 'rgba(255,255,255,.8)' }}>
-              {prog.next ? <>Plus que <strong style={{ color: '#fff' }}>{prog.toNext} pts</strong> avant le palier <strong style={{ color: '#F2C84B' }}>{prog.next.name}</strong></> : 'Vous êtes au palier maximum ✨'}
-            </div>
+          <div style={{ height: 5, background: 'rgba(255,255,255,.2)', borderRadius: 99, overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: `${prog.pct}%`, background: '#FCD34D', borderRadius: 99, transition: 'width .6s ease' }} />
           </div>
+          {prog.next && (
+            <p style={{ fontSize: 12, color: 'rgba(255,255,255,.7)', marginTop: 8 }}>
+              Encore <strong style={{ color: '#fff' }}>{prog.toNext} pts</strong> avant {prog.next.name}
+            </p>
+          )}
         </div>
       </div>
 
-      {/* Rewards */}
-      {rewards.length > 0 && (
-        <div style={{ padding: '20px 20px 0' }}>
-          <div style={{ fontSize: 16, fontWeight: 700, color: '#0A0A0A', marginBottom: 12 }}>Récompenses disponibles</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {rewards.map(reward => {
-              const canAfford = client.points_balance >= reward.points_cost
-              const isSent    = sent.has(reward.id)
-              return (
-                <div key={reward.id} style={{ background: '#fff', borderRadius: 16, padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, boxShadow: '0 1px 2px rgba(0,0,0,.04)', opacity: canAfford ? 1 : 0.6 }}>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: '#0A0A0A' }}>{reward.name}</div>
-                    {reward.description && <div style={{ fontSize: 12, color: '#8E8E93', marginTop: 2 }}>{reward.description}</div>}
-                    <div style={{ fontSize: 12, color: '#185FA5', fontWeight: 600, marginTop: 4 }}>{reward.points_cost} pts</div>
-                  </div>
-                  {isSent ? (
-                    <span style={{ fontSize: 12, color: '#16A34A', fontWeight: 600, whiteSpace: 'nowrap', background: '#F0FDF4', padding: '6px 12px', borderRadius: 99 }}>Envoyée ✓</span>
-                  ) : (
-                    <button
-                      onClick={() => canAfford && setConfirming(reward)}
-                      disabled={!canAfford}
-                      style={{ background: canAfford ? '#185FA5' : '#E5E7EB', color: canAfford ? '#fff' : '#9CA3AF', border: 'none', borderRadius: 12, padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: canAfford ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                      {canAfford ? 'Utiliser' : 'Insuffisant'}
-                    </button>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Visits */}
       <div style={{ padding: '20px' }}>
-        <div style={{ fontSize: 16, fontWeight: 700, color: '#0A0A0A', marginBottom: 12 }}>Historique des visites</div>
-        {(client.visits ?? []).length === 0 ? (
-          <div style={{ background: '#fff', borderRadius: 18, padding: '24px', textAlign: 'center', color: '#8E8E93', fontSize: 14 }}>Aucune visite enregistrée.</div>
-        ) : (
-          <div style={{ background: '#fff', borderRadius: 18, overflow: 'hidden', boxShadow: '0 1px 2px rgba(0,0,0,.04)' }}>
-            {client.visits.map((v, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderBottom: i === client.visits.length - 1 ? 'none' : '1px solid #F2F2F7' }}>
-                <div>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: '#0A0A0A' }}>Visite — {v.amount_paid} MAD</div>
-                  <div style={{ fontSize: 12, color: '#8E8E93', marginTop: 2 }}>{timeAgo(v.created_at)}</div>
-                </div>
-                <div style={{ fontWeight: 700, fontSize: 14, color: '#16A34A' }}>+{v.points_earned} pts</div>
-              </div>
-            ))}
+
+        {/* Rewards */}
+        {rewards.length > 0 && (
+          <div style={{ marginBottom: 24 }}>
+            <p style={{ fontSize: 13, fontWeight: 600, color: '#8E8E93', letterSpacing: '.04em', textTransform: 'uppercase', marginBottom: 12 }}>Récompenses</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {rewards.map(r => {
+                const canAfford = client.points_balance >= r.points_cost
+                const isSent    = sent.has(r.id)
+                return (
+                  <div key={r.id} style={{ background: '#fff', borderRadius: 14, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12, border: '1px solid rgba(0,0,0,.06)', opacity: canAfford ? 1 : .55 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: 14, fontWeight: 700, color: '#1C1C1E' }}>{r.name}</p>
+                      {r.description && <p style={{ fontSize: 12, color: '#8E8E93', marginTop: 2 }}>{r.description}</p>}
+                      <p style={{ fontSize: 12, color: '#185FA5', fontWeight: 700, marginTop: 4 }}>{r.points_cost} pts</p>
+                    </div>
+                    {isSent ? (
+                      <span style={{ fontSize: 12, color: '#16A34A', fontWeight: 700, background: '#F0FDF4', padding: '6px 12px', borderRadius: 99, whiteSpace: 'nowrap' }}>Envoyé ✓</span>
+                    ) : (
+                      <button onClick={() => canAfford && setConfirming(r)} disabled={!canAfford}
+                        style={{ background: canAfford ? '#185FA5' : '#E5E7EB', color: canAfford ? '#fff' : '#9CA3AF', borderRadius: 10, padding: '8px 14px', fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                        Utiliser
+                      </button>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
           </div>
         )}
+
+        {/* Visit history */}
+        <div>
+          <p style={{ fontSize: 13, fontWeight: 600, color: '#8E8E93', letterSpacing: '.04em', textTransform: 'uppercase', marginBottom: 12 }}>Historique</p>
+          {(client.visits ?? []).length === 0 ? (
+            <div style={{ background: '#fff', borderRadius: 14, padding: '24px', textAlign: 'center', color: '#8E8E93', fontSize: 14, border: '1px solid rgba(0,0,0,.06)' }}>Aucune visite encore.</div>
+          ) : (
+            <div style={{ background: '#fff', borderRadius: 14, overflow: 'hidden', border: '1px solid rgba(0,0,0,.06)' }}>
+              {client.visits.map((v, i) => (
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '13px 16px', borderBottom: i < client.visits.length - 1 ? '1px solid #F5F5F7' : 'none' }}>
+                  <div>
+                    <p style={{ fontSize: 14, fontWeight: 600, color: '#1C1C1E' }}>{v.amount_paid} MAD</p>
+                    <p style={{ fontSize: 12, color: '#8E8E93', marginTop: 2 }}>{ago(v.created_at)}</p>
+                  </div>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: '#16A34A' }}>+{v.points_earned} pts</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Confirm modal */}
       {confirming && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', zIndex: 100, padding: '0 0 24px' }}>
-          <div style={{ background: '#fff', borderRadius: 24, padding: '24px', width: '100%', maxWidth: 400, margin: '0 16px', textAlign: 'center' }}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>🎁</div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: '#0A0A0A', marginBottom: 6 }}>{confirming.name}</div>
-            <div style={{ fontSize: 14, color: '#8E8E93', marginBottom: 20 }}>
-              Utiliser <strong style={{ color: '#185FA5' }}>{confirming.points_cost} pts</strong> pour cette récompense ?<br />
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', zIndex: 100, padding: '0 16px 32px' }}>
+          <div style={{ background: '#fff', borderRadius: 24, padding: '28px 24px', width: '100%', maxWidth: 420, textAlign: 'center' }}>
+            <div style={{ fontSize: 44, marginBottom: 14 }}>🎁</div>
+            <h3 style={{ fontSize: 18, fontWeight: 800, color: '#1C1C1E', marginBottom: 8 }}>{confirming.name}</h3>
+            <p style={{ fontSize: 14, color: '#8E8E93', lineHeight: 1.6, marginBottom: 24 }}>
+              Utiliser <strong style={{ color: '#185FA5' }}>{confirming.points_cost} pts</strong> pour cette récompense ?<br/>
               Le restaurant devra valider votre demande.
-            </div>
-            <div style={{ display: 'flex', gap: 12 }}>
-              <button onClick={() => setConfirming(null)} style={{ flex: 1, padding: '12px', borderRadius: 14, border: '1px solid #E5E7EB', background: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer', color: '#6B7280' }}>Annuler</button>
-              <button onClick={() => requestReward(confirming)} disabled={sending} style={{ flex: 1, padding: '12px', borderRadius: 14, border: 'none', background: '#185FA5', color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
+            </p>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={() => setConfirming(null)} style={{ flex: 1, padding: '13px', borderRadius: 14, border: '1.5px solid #E5E7EB', background: '#fff', fontSize: 15, fontWeight: 600, color: '#6B7280' }}>Annuler</button>
+              <button onClick={() => requestReward(confirming)} disabled={sending}
+                style={{ flex: 1, padding: '13px', borderRadius: 14, background: '#185FA5', color: '#fff', fontSize: 15, fontWeight: 700 }}>
                 {sending ? '…' : 'Confirmer'}
               </button>
             </div>
@@ -322,55 +377,25 @@ function RestoScreen({ client, clientName, onBack }: { client: ClientRecord; cli
   )
 }
 
-// ─── Tab bar ─────────────────────────────────────────────────────────────────
+// ─── Loading skeleton ─────────────────────────────────────────────────────────
 
-function TabBar({ active, onScan }: { active: 'home' | 'resto'; onScan: () => void }) {
-  const tabs = [
-    { id: 'home', label: 'Accueil', icon: <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2h-4v-7H9v7H5a2 2 0 0 1-2-2z"/> },
-    { id: 'scan', label: 'Scanner', icon: <><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></> },
-  ]
+function LoadingScreen() {
   return (
-    <div className="fidele-tabbar">
-      {tabs.map(t => (
-        <button key={t.id} onClick={t.id === 'scan' ? onScan : undefined} style={{ flex: 1, padding: '6px 4px', background: 'none', border: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, color: active === t.id ? '#185FA5' : '#8E8E93', cursor: 'pointer' }}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{t.icon}</svg>
-          <span style={{ fontSize: 10, fontWeight: 600 }}>{t.label}</span>
-        </button>
-      ))}
+    <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ width: 36, height: 36, borderRadius: '50%', border: '3px solid #E5E5EA', borderTopColor: '#185FA5', animation: 'spin 1s linear infinite' }} />
+      <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
     </div>
   )
 }
 
-function DesktopSidebar({ active, onScan }: { active: 'home' | 'resto'; onScan: () => void }) {
-  const items = [
-    { id: 'home', label: 'Accueil',  icon: <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2h-4v-7H9v7H5a2 2 0 0 1-2-2z"/> },
-    { id: 'scan', label: 'Scanner',  icon: <><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></> },
-  ]
-  return (
-    <div className="fidele-sidebar">
-      <div style={{ padding: '28px 24px 20px', borderBottom: '1px solid #F2F2F7' }}>
-        <div style={{ fontSize: 22, fontWeight: 700, color: '#0A0A0A', fontFamily: '"Source Serif 4", Georgia, serif' }}>Taghra</div>
-        <div style={{ fontSize: 12, color: '#8E8E93', marginTop: 2 }}>Portefeuille fidélité</div>
-      </div>
-      <nav style={{ padding: '16px 12px', flex: 1 }}>
-        {items.map(item => (
-          <button key={item.id} onClick={item.id === 'scan' ? onScan : undefined} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderRadius: 12, border: 'none', marginBottom: 2, background: active === item.id ? '#185FA514' : 'transparent', color: active === item.id ? '#185FA5' : '#6B7280', fontWeight: active === item.id ? 600 : 500, fontSize: 14, cursor: 'pointer', textAlign: 'left' }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{item.icon}</svg>
-            {item.label}
-          </button>
-        ))}
-      </nav>
-    </div>
-  )
-}
-
-// ─── Main ─────────────────────────────────────────────────────────────────────
+// ─── App ──────────────────────────────────────────────────────────────────────
 
 export default function ClientApp() {
   const router = useRouter()
-  const [clients,     setClients]     = useState<ClientRecord[]>([])
+
+  const [clients,     setClients]     = useState<Client[]>([])
   const [clientName,  setClientName]  = useState('')
-  const [screen,      setScreen]      = useState<{ name: 'wallet' } | { name: 'resto'; id: string }>({ name: 'wallet' })
+  const [screen,      setScreen]      = useState<'home' | string>('home')
   const [showScanner, setShowScanner] = useState(false)
   const [loading,     setLoading]     = useState(true)
   const [hasPhone,    setHasPhone]    = useState(false)
@@ -381,85 +406,38 @@ export default function ClientApp() {
     if (!phone) { setLoading(false); return }
     setHasPhone(true)
     setClientName(name)
-
     fetch(`/api/client/data?phone=${encodeURIComponent(phone)}`)
       .then(r => r.json())
-      .then((data: ClientRecord[]) => { setClients(Array.isArray(data) ? data : []); setLoading(false) })
+      .then((d: Client[]) => { setClients(Array.isArray(d) ? d : []); setLoading(false) })
       .catch(() => setLoading(false))
   }, [])
 
-  const currentClient = screen.name === 'resto' ? clients.find(c => c.id === screen.id) : null
-  const activeTab     = screen.name === 'wallet' ? 'home' : 'resto'
+  const activeClient = screen !== 'home' ? clients.find(c => c.id === screen) : null
+  const tab          = screen === 'home' ? 'home' : 'home'
 
-  if (loading) {
-    return (
-      <>
-        <style>{`* { box-sizing: border-box; } html, body { margin: 0; padding: 0; background: #F2F2F7; }`}</style>
-        <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F2F2F7' }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ width: 40, height: 40, borderRadius: 99, border: '3px solid #E5E7EB', borderTopColor: '#185FA5', animation: 'spin 1s linear infinite', margin: '0 auto' }} />
-            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-            <div style={{ marginTop: 16, fontSize: 14, color: '#8E8E93' }}>Chargement…</div>
-          </div>
-        </div>
-      </>
-    )
-  }
+  if (loading) return <><style>{BASE_CSS}</style><LoadingScreen /></>
 
-  if (!hasPhone) {
-    return (
-      <>
-        <style>{`@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;600;700&display=swap'); * { box-sizing: border-box; } html, body { margin: 0; padding: 0; background: #F2F2F7; -webkit-font-smoothing: antialiased; } button { font-family: inherit; }`}</style>
-        <WelcomeScreen onScan={() => setShowScanner(true)} />
-        {showScanner && <Suspense fallback={null}><ScannerScreen onClose={() => setShowScanner(false)} /></Suspense>}
-      </>
-    )
-  }
+  if (!hasPhone) return (
+    <>
+      <style>{BASE_CSS}</style>
+      <WelcomeScreen onScan={() => setShowScanner(true)} />
+      {showScanner && <Suspense fallback={null}><ScannerScreen onClose={() => setShowScanner(false)} /></Suspense>}
+    </>
+  )
 
   return (
     <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;600;700&display=swap');
-        * { box-sizing: border-box; }
-        html, body { margin: 0; padding: 0; background: #F2F2F7; -webkit-font-smoothing: antialiased; }
-        button { transition: transform .1s; font-family: inherit; }
-        button:active { transform: scale(.97); }
-        .fidele-outer  { display: flex; flex-direction: row; min-height: 100dvh; }
-        .fidele-sidebar { display: none; }
-        .fidele-app    { flex: 1; min-width: 0; font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif; }
-        .fidele-content { padding-bottom: 90px; }
-        .resto-grid  { display: flex; flex-direction: column; gap: 12px; }
-        .fidele-tabbar {
-          position: fixed; bottom: 0; left: 0; right: 0;
-          padding-bottom: env(safe-area-inset-bottom, 16px);
-          padding-top: 8px; padding-left: 8px; padding-right: 8px;
-          background: rgba(255,255,255,.86); backdrop-filter: blur(20px);
-          border-top: 0.5px solid rgba(0,0,0,.08);
-          display: flex; justify-content: space-around; z-index: 50;
-        }
-        @media (min-width: 640px) {
-          .resto-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
-        }
-        @media (min-width: 1024px) {
-          html, body { background: #EAECF0; }
-          .fidele-outer { background: #EAECF0; max-width: 1400px; margin: 0 auto; }
-          .fidele-sidebar { display: flex; flex-direction: column; width: 260px; flex-shrink: 0; background: #fff; border-right: 1px solid rgba(0,0,0,.06); position: sticky; top: 0; height: 100dvh; overflow-y: auto; }
-          .fidele-app { background: #F2F2F7; }
-          .fidele-tabbar { display: none; }
-          .fidele-content { padding-bottom: 48px; }
-          .resto-grid { grid-template-columns: repeat(3, 1fr); }
-        }
-      `}</style>
-
-      <div className="fidele-outer">
-        <DesktopSidebar active={activeTab} onScan={() => setShowScanner(true)} />
-        <div className="fidele-app">
-          {screen.name === 'wallet' && <WalletScreen clients={clients} clientName={clientName} onOpen={id => setScreen({ name: 'resto', id })} />}
-          {screen.name === 'resto'  && currentClient && <RestoScreen client={currentClient} clientName={clientName} onBack={() => setScreen({ name: 'wallet' })} />}
-          <TabBar active={activeTab} onScan={() => setShowScanner(true)} />
+      <style>{BASE_CSS}</style>
+      <div className="app-root">
+        <Sidebar tab={tab} onScan={() => setShowScanner(true)} />
+        <div className="main">
+          <div className="scroll-area">
+            {screen === 'home' && <HomeScreen clients={clients} name={clientName} onOpen={id => setScreen(id)} />}
+            {activeClient      && <DetailScreen client={activeClient} clientName={clientName} onBack={() => setScreen('home')} />}
+          </div>
+          <TabBar tab={tab} onScan={() => setShowScanner(true)} />
         </div>
       </div>
-
       {showScanner && (
         <Suspense fallback={null}>
           <ScannerScreen onClose={() => { setShowScanner(false); router.refresh() }} />
