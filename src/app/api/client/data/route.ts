@@ -11,9 +11,10 @@ function adminSupabase() {
   )
 }
 
-// GET /api/client/data?phone=0612345678
-export async function GET(req: NextRequest) {
-  const phone = req.nextUrl.searchParams.get('phone')
+// POST /api/client/data  { phone }
+export async function POST(req: NextRequest) {
+  const body  = await req.json().catch(() => ({}))
+  const phone = body.phone as string | undefined
   if (!phone) return NextResponse.json({ error: 'phone requis' }, { status: 400 })
 
   const sb = adminSupabase()

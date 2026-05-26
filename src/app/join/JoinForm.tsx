@@ -63,7 +63,11 @@ export default function JoinForm({ token, restaurantId, restaurantName, amount }
     // Simpler: just go to name step for all, if existing the server already has the name
     // Actually: do a quick lookup
     try {
-      const res = await fetch(`/api/client/data?phone=${encodeURIComponent(phone)}`)
+      const res = await fetch('/api/client/data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone }),
+      })
       const data = await res.json()
       const match = Array.isArray(data) ? data.find((c: any) => c.restaurant_id === restaurantId) : null
       if (match) {

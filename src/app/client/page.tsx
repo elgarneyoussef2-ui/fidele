@@ -175,7 +175,11 @@ function WelcomeScreen({ onScan, onPhoneLogin }: { onScan: () => void; onPhoneLo
     if (!p) return
     setBusy(true); setErr('')
     try {
-      const res  = await fetch(`/api/client/data?phone=${encodeURIComponent(p)}&_=${Date.now()}`, { cache: 'no-store' })
+      const res  = await fetch('/api/client/data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: p }),
+      })
       const data = await res.json()
       if (!Array.isArray(data) || data.length === 0) {
         setErr('Aucun compte trouvé pour ce numéro. Scannez un QR code pour créer votre compte.')
@@ -564,7 +568,11 @@ export default function ClientApp() {
   // Extracted so it can be called after scan too
   const loadData = useCallback(async (p: string) => {
     try {
-      const res = await fetch(`/api/client/data?phone=${encodeURIComponent(p)}&_=${Date.now()}`, { cache: 'no-store' })
+      const res = await fetch('/api/client/data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: p }),
+      })
       const d   = await res.json()
       if (Array.isArray(d)) {
         setClients(d)
