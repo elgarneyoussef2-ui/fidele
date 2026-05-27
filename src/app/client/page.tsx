@@ -57,6 +57,23 @@ const ago = (iso: string, t: Tr) => {
 const initials = (s: string) =>
   s.trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase()
 
+const INSTALL = {
+  fr: {
+    title: 'Installer l\'app Fidèle',
+    desc:  'Accédez à vos points depuis l\'écran d\'accueil.',
+    btn:   'Ajouter à l\'écran d\'accueil',
+    ios:   'Appuyez sur ⬆ puis « Sur l\'écran d\'accueil »',
+    later: 'Plus tard',
+  },
+  ar: {
+    title: 'تثبيت تطبيق Fidèle',
+    desc:  'الوصول إلى نقاطك من الشاشة الرئيسية.',
+    btn:   'إضافة إلى الشاشة الرئيسية',
+    ios:   'اضغط ⬆ ثم « إضافة إلى الشاشة الرئيسية »',
+    later: 'لاحقاً',
+  },
+}
+
 // ─── Global styles ────────────────────────────────────────────────────────────
 
 const CSS = `
@@ -699,6 +716,40 @@ function DetailScreen({ client, clientName, onBack, t, isRtl }: {
   )
 }
 
+// ─── Install Banner ───────────────────────────────────────────────────────────
+
+function InstallBanner({ lang, isIOS, hasPrompt, onInstall, onDismiss, isRtl }: {
+  lang: Lang; isIOS: boolean; hasPrompt: boolean
+  onInstall: () => void; onDismiss: () => void; isRtl: boolean
+}) {
+  const i = INSTALL[lang]
+  return (
+    <div dir={isRtl ? 'rtl' : 'ltr'} style={{ margin: '0 0 20px', background: '#EDE6FB', border: '1px solid #C4B5FD', borderRadius: 20, padding: '16px 18px', display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+      <div style={{ width: 42, height: 42, borderRadius: 14, background: '#5B21B6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <svg viewBox="0 0 100 100" width="22" height="22" aria-hidden>
+          <circle cx="50" cy="50" r="42" fill="none" stroke="white" strokeWidth="8" />
+          <circle cx="50" cy="50" r="14" fill="white" />
+        </svg>
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ fontSize: 13, fontWeight: 700, color: '#3B0764', marginBottom: 2 }}>{i.title}</p>
+        <p style={{ fontSize: 12, color: '#6D28D9', lineHeight: 1.4, marginBottom: 12 }}>{i.desc}</p>
+        {hasPrompt ? (
+          <button
+            onClick={onInstall}
+            style={{ background: '#5B21B6', color: '#fff', border: 'none', borderRadius: 10, padding: '9px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
+          >
+            {i.btn}
+          </button>
+        ) : isIOS ? (
+          <p style={{ fontSize: 12, color: '#5B21B6', fontWeight: 600 }}>{i.ios}</p>
+        ) : null}
+      </div>
+      <button onClick={onDismiss} style={{ fontSize: 18, color: '#C4B5FD', lineHeight: 1, flexShrink: 0, padding: '0 0 0 4px' }}>×</button>
+    </div>
+  )
+}
+
 // ─── Loading ──────────────────────────────────────────────────────────────────
 
 function Spinner() {
@@ -733,7 +784,10 @@ export default function ClientApp() {
   const [showScanner, setShowScanner] = useState(false)
   const [loading, setLoading] = useState(true)
   const [hasPhone, setHasPhone] = useState(false)
-  const [lang, setLang] = useState<Lang>('fr')
+  const [lang,          setLang]          = useState<Lang>('fr')
+  const [installPrompt, setInstallPrompt] = useState<any>(null)
+  const [isIOS,         setIsIOS]         = useState(false)
+  const [showBanner,    setShowBanner]    = useState(false)
 
   const t      = T[lang]
   const isRtl  = lang === 'ar'
@@ -775,6 +829,30 @@ export default function ClientApp() {
     loadData(p).finally(() => setLoading(false))
   }, [loadData])
 
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {})
+    }
+
+    if (window.matchMedia('(display-mode: standalone)').matches) return
+    if (localStorage.getItem('fidele_install_dismissed')) return
+
+    const ios = /iPad|iPhone|iPod/.test(navigator.userAgent)
+    setIsIOS(ios)
+    if (ios) {
+      const t = setTimeout(() => setShowBanner(true), 3000)
+      return () => clearTimeout(t)
+    }
+
+    const handler = (e: Event) => {
+      e.preventDefault()
+      setInstallPrompt(e)
+      setShowBanner(true)
+    }
+    window.addEventListener('beforeinstallprompt', handler)
+    return () => window.removeEventListener('beforeinstallprompt', handler)
+  }, [])
+
   const activeClient = screen !== 'home' ? (clients.find(c => c.id === screen) ?? null) : null
   useEffect(() => {
     if (screen !== 'home' && clients.length > 0 && !activeClient) setScreen('home')
@@ -783,6 +861,17 @@ export default function ClientApp() {
   function handleScannerClose() {
     setShowScanner(false)
     if (phone) loadData(phone)
+  }
+
+  function handleInstall() {
+    if (!installPrompt) return
+    installPrompt.prompt()
+    installPrompt.userChoice.then(() => { setInstallPrompt(null); setShowBanner(false) })
+  }
+
+  function dismissBanner() {
+    localStorage.setItem('fidele_install_dismissed', '1')
+    setShowBanner(false)
   }
 
   if (loading) return <><style>{CSS}</style><Spinner /></>
@@ -816,6 +905,14 @@ export default function ClientApp() {
         <Sidebar isHome={isHome} onScan={() => setShowScanner(true)} t={t} isRtl={isRtl} onLangToggle={toggleLang} />
         <div className="c-main">
           <div className="c-scroll">
+            {isHome && showBanner && (installPrompt || isIOS) && (
+              <div style={{ padding: '16px 16px 0' }}>
+                <InstallBanner
+                  lang={lang} isIOS={isIOS} hasPrompt={!!installPrompt}
+                  onInstall={handleInstall} onDismiss={dismissBanner} isRtl={isRtl}
+                />
+              </div>
+            )}
             {isHome
               ? <HomeScreen clients={clients} name={clientName} onOpen={id => setScreen(id)} onScan={() => setShowScanner(true)} t={t} isRtl={isRtl} onLangToggle={toggleLang} />
               : activeClient
