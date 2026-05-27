@@ -743,7 +743,7 @@ function InstallBanner({ lang, isIOS, hasPrompt, onInstall, onDismiss, isRtl }: 
 }) {
   const i = INSTALL[lang]
   return (
-    <div dir={isRtl ? 'rtl' : 'ltr'} className="install-anim" style={{ background: '#fff', border: '1px solid #C4B5FD', borderRadius: 20, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14, boxShadow: '0 8px 32px rgba(91,33,182,.18)' }}>
+    <div dir={isRtl ? 'rtl' : 'ltr'} className="install-anim" style={{ background: '#fff', border: '1px solid #C4B5FD', borderRadius: 20, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12, boxShadow: '0 8px 32px rgba(91,33,182,.18)' }}>
       <div style={{ width: 44, height: 44, borderRadius: 14, background: '#5B21B6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
         <svg viewBox="0 0 100 100" width="22" height="22" aria-hidden>
           <circle cx="50" cy="50" r="42" fill="none" stroke="white" strokeWidth="8" />
@@ -752,23 +752,21 @@ function InstallBanner({ lang, isIOS, hasPrompt, onInstall, onDismiss, isRtl }: 
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{ fontSize: 13, fontWeight: 700, color: '#15101F' }}>{i.title}</p>
-        <p style={{ fontSize: 12, color: '#6D28D9', marginTop: 2 }}>
-          {hasPrompt ? i.desc : isIOS ? i.ios : i.desc}
-        </p>
+        <p style={{ fontSize: 12, color: '#6D28D9', marginTop: 1 }}>{i.desc}</p>
+        {!hasPrompt && isIOS && (
+          <p style={{ fontSize: 11, color: '#9CA3AF', marginTop: 3 }}>{i.ios}</p>
+        )}
       </div>
-      {hasPrompt ? (
-        <button
-          onClick={onInstall}
-          style={{ background: '#5B21B6', color: '#fff', border: 'none', borderRadius: 12, padding: '10px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0, whiteSpace: 'nowrap' }}
-        >
-          {i.btn}
-        </button>
-      ) : (
-        <button onClick={onDismiss} style={{ fontSize: 20, color: '#C4B5FD', lineHeight: 1, flexShrink: 0, padding: '0 4px' }}>×</button>
-      )}
-      {hasPrompt && (
-        <button onClick={onDismiss} style={{ fontSize: 20, color: '#C4B5FD', lineHeight: 1, flexShrink: 0, padding: '0 4px' }}>×</button>
-      )}
+      <button
+        onClick={onInstall}
+        style={{ background: '#5B21B6', color: '#fff', border: 'none', borderRadius: 12, padding: '10px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 6 }}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        {i.btn}
+      </button>
+      <button onClick={onDismiss} style={{ fontSize: 20, color: '#C4B5FD', lineHeight: 1, flexShrink: 0, padding: '0 2px' }}>×</button>
     </div>
   )
 }
@@ -890,13 +888,15 @@ export default function ClientApp() {
   }
 
   function handleInstall() {
-    if (!installPrompt) return
-    installPrompt.prompt()
-    installPrompt.userChoice.then(() => {
-      setInstallPrompt(null)
-      setShowBanner(false)
-      localStorage.setItem('fidele_install_dismissed', '1')
-    })
+    if (installPrompt) {
+      installPrompt.prompt()
+      installPrompt.userChoice.then(() => {
+        setInstallPrompt(null)
+        setShowBanner(false)
+        localStorage.setItem('fidele_install_dismissed', '1')
+      })
+    }
+    // iOS and others: the banner already shows the share instructions inline
   }
 
   function dismissBanner() {
