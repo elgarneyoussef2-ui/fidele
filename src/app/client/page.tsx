@@ -358,8 +358,10 @@ function RestoCard({ client, onClick }: { client: Client; onClick: () => void })
     <button onClick={onClick} className="shadow-card" style={{ background: '#fff', borderRadius: 24, padding: '20px', textAlign: 'left', display: 'block', width: '100%', border: 'none' }}>
       {/* Top row */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
-        <div style={{ width: 52, height: 52, borderRadius: 18, background: 'var(--fidele-violet-tint)', color: 'var(--fidele-violet)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 24, flexShrink: 0 }}>
-          {name[0]?.toUpperCase()}
+        <div style={{ width: 52, height: 52, borderRadius: 18, background: 'var(--fidele-violet-tint)', color: 'var(--fidele-violet)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 24, flexShrink: 0, overflow: 'hidden' }}>
+          {client.restaurants?.logo_url
+            ? <img src={client.restaurants.logo_url} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            : name[0]?.toUpperCase()}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ fontSize: 17, fontWeight: 700, color: 'var(--fidele-ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</p>
