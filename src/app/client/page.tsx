@@ -353,7 +353,11 @@ function RestoCard({ client, onClick }: { client: Client; onClick: () => void })
   const tier = tierFor(client.points_balance)
   const prog = tierProgress(client.points_balance)
   const name = client.restaurants?.name ?? '—'
-  const pts = client.points_balance || 0
+  const pts  = client.points_balance || 0
+
+  const expiry = client.next_expiry ?? null
+  const daysLeft = expiry ? Math.ceil((new Date(expiry.expires_at).getTime() - Date.now()) / 86400000) : null
+  const urgent   = daysLeft !== null && daysLeft <= 30
 
   return (
     <button onClick={onClick} className="shadow-card" style={{ background: '#fff', borderRadius: 24, padding: '20px', textAlign: 'left', display: 'block', width: '100%', border: 'none' }}>
@@ -389,6 +393,19 @@ function RestoCard({ client, onClick }: { client: Client; onClick: () => void })
           <div style={{ height: '100%', width: `${prog.pct}%`, background: tier.color, borderRadius: 99, transition: 'width .6s cubic-bezier(.4,0,.2,1)' }} />
         </div>
       </div>
+
+      {/* Expiry pill */}
+      {expiry && daysLeft !== null && (
+        <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', borderRadius: 10, background: urgent ? '#FEF2F2' : '#FFFBEB', border: `1px solid ${urgent ? '#FECACA' : '#FDE68A'}` }}>
+          <span style={{ fontSize: 13 }}>{urgent ? '⚠️' : '⏳'}</span>
+          <p style={{ fontSize: 12, fontWeight: 600, color: urgent ? '#DC2626' : '#B45309' }}>
+            {expiry.points_earned} pt{expiry.points_earned > 1 ? 's' : ''} expirent dans {daysLeft} jour{daysLeft > 1 ? 's' : ''}
+          </p>
+          <span style={{ marginLeft: 'auto', fontSize: 11, color: urgent ? '#EF4444' : '#D97706', fontWeight: 500 }}>
+            {new Date(expiry.expires_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+          </span>
+        </div>
+      )}
     </button>
   )
 }
