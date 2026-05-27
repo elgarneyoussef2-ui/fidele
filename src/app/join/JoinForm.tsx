@@ -204,60 +204,106 @@ export default function JoinForm({ token, restaurantId, restaurantName, amount }
   )
 
   if (step === 'success') {
-    return (
-      <div dir={isRtl ? 'rtl' : 'ltr'}>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>{langBtn}</div>
-        <Card className="border-none shadow-none text-center space-y-6 py-8 bg-transparent">
-          <div className="flex justify-center">
-            <div className="w-24 h-24 bg-green-50 rounded-full flex items-center justify-center text-green-600 shadow-sm border border-green-100">
-              <CheckCircle2 size={56} />
-            </div>
-          </div>
-          <CardHeader className="space-y-2">
-            <CardTitle className="text-3xl font-bold text-foreground">{jt.bravo(clientName)}</CardTitle>
-            <CardDescription className="text-lg text-muted-foreground">{jt.pts_added}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="bg-primary/5 p-8 rounded-[22px] border border-primary/10">
-              <p className="eyebrow text-primary mb-2">{jt.pts_earned}</p>
-              <p className="text-6xl font-black text-primary num-mono">+{pointsEarned}</p>
-            </div>
-            <div className="pt-2">
-              <p className="text-sm text-muted-foreground">{jt.new_balance(restaurantName)}</p>
-              <p className="text-2xl font-bold text-foreground num-mono">{jt.points(newBalance)}</p>
-            </div>
-          </CardContent>
-          <CardFooter className="flex flex-col gap-4 px-6">
-            <Button className="w-full h-14 text-lg font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl" onClick={() => window.location.replace('/client')}>
-              {jt.see_wallet}
-            </Button>
+    const showInstall = !isStandalone && (installPrompt || isIOS)
 
-            {/* Install prompt */}
-            {!isStandalone && (installPrompt || isIOS) && (
-              <div style={{ background: '#EDE6FB', border: '1px solid #C4B5FD', borderRadius: 20, padding: '16px 18px', textAlign: isRtl ? 'right' : 'left' }}>
-                <p style={{ fontSize: 13, fontWeight: 700, color: '#3B0764', marginBottom: 4 }}>{jt.install_title}</p>
-                <p style={{ fontSize: 12, color: '#6D28D9', marginBottom: 12 }}>{jt.install_desc}</p>
-                {installPrompt ? (
-                  <button
-                    type="button"
-                    onClick={() => { installPrompt.prompt(); installPrompt.userChoice.then(() => setInstallPrompt(null)) }}
-                    style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#5B21B6', color: '#fff', border: 'none', borderRadius: 12, padding: '10px 16px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
-                  >
-                    <Download size={15} />
-                    {jt.install_btn}
-                  </button>
-                ) : (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#5B21B6', fontWeight: 500 }}>
-                    <Share size={15} />
-                    <span>{jt.install_ios} <strong>⬆</strong> {jt.install_ios2}</span>
+    return (
+      <div dir={isRtl ? 'rtl' : 'ltr'} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>{langBtn}</div>
+
+        {/* ── Points card ── */}
+        <div style={{ background: '#fff', borderRadius: 28, padding: '32px 24px', boxShadow: '0 4px 24px rgba(21,16,31,.08)', border: '1px solid rgba(21,16,31,.06)', textAlign: 'center' }}>
+          <div style={{ width: 80, height: 80, borderRadius: '50%', background: '#F0FDF4', border: '2px solid #BBF7D0', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', color: '#16A34A' }}>
+            <CheckCircle2 size={44} />
+          </div>
+          <h2 style={{ fontSize: 26, fontWeight: 800, color: '#15101F', letterSpacing: '-.02em', marginBottom: 4 }}>
+            {jt.bravo(clientName)}
+          </h2>
+          <p style={{ fontSize: 14, color: '#6B7280', marginBottom: 24 }}>{jt.pts_added}</p>
+
+          <div style={{ background: 'linear-gradient(135deg,#EDE6FB,#F3E8FF)', borderRadius: 20, padding: '24px 20px', marginBottom: 16 }}>
+            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: '#6D28D9', marginBottom: 6 }}>{jt.pts_earned}</p>
+            <p style={{ fontSize: 64, fontWeight: 900, color: '#5B21B6', lineHeight: 1, fontFamily: 'monospace' }}>+{pointsEarned}</p>
+          </div>
+
+          <p style={{ fontSize: 13, color: '#9CA3AF' }}>{jt.new_balance(restaurantName)}</p>
+          <p style={{ fontSize: 22, fontWeight: 800, color: '#15101F', fontFamily: 'monospace', marginTop: 4 }}>{jt.points(newBalance)}</p>
+        </div>
+
+        {/* ── Install prompt ── */}
+        {showInstall && (
+          <div style={{
+            background: 'linear-gradient(135deg,#15101F 0%,#2D1B69 100%)',
+            borderRadius: 24, padding: '24px 22px',
+            boxShadow: '0 8px 32px rgba(91,33,182,.35)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18 }}>
+              {/* App icon */}
+              <div style={{ width: 54, height: 54, borderRadius: 16, background: 'rgba(255,255,255,.1)', border: '1px solid rgba(255,255,255,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <svg viewBox="0 0 100 100" width="28" height="28" style={{ color: '#A78BFA' }}>
+                  <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" strokeWidth="6"/>
+                  <circle cx="50" cy="50" r="13" fill="currentColor"/>
+                </svg>
+              </div>
+              <div>
+                <p style={{ fontSize: 15, fontWeight: 800, color: '#fff', marginBottom: 2 }}>
+                  {lang === 'ar' ? 'تثبيت تطبيق Fidèle' : 'Installer Fidèle'}
+                </p>
+                <p style={{ fontSize: 12, color: 'rgba(255,255,255,.55)' }}>
+                  {lang === 'ar' ? 'وصول سريع من الشاشة الرئيسية' : 'Accès rapide depuis votre écran d\'accueil'}
+                </p>
+              </div>
+            </div>
+
+            {installPrompt ? (
+              /* Android — native prompt */
+              <button
+                type="button"
+                onClick={() => { installPrompt.prompt(); installPrompt.userChoice.then(() => setInstallPrompt(null)) }}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                  background: '#5B21B6', color: '#fff', border: 'none', borderRadius: 14,
+                  padding: '14px 20px', fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+                  boxShadow: '0 4px 16px rgba(91,33,182,.5)',
+                }}
+              >
+                <Download size={18} />
+                {jt.install_btn}
+              </button>
+            ) : (
+              /* iOS — step-by-step */
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {[
+                  { icon: '①', text: lang === 'ar' ? 'اضغط على زر المشاركة ⬆ في شريط Safari' : 'Appuyez sur ⬆ dans la barre Safari' },
+                  { icon: '②', text: lang === 'ar' ? 'اختر « إضافة إلى الشاشة الرئيسية »' : 'Choisissez « Sur l\'écran d\'accueil »' },
+                  { icon: '③', text: lang === 'ar' ? 'اضغط « إضافة » للتأكيد' : 'Appuyez sur « Ajouter » pour confirmer' },
+                ].map((s, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(255,255,255,.07)', borderRadius: 12, padding: '10px 14px' }}>
+                    <span style={{ fontSize: 18, flexShrink: 0 }}>{s.icon}</span>
+                    <p style={{ fontSize: 13, color: 'rgba(255,255,255,.8)', fontWeight: 500 }}>{s.text}</p>
                   </div>
-                )}
+                ))}
               </div>
             )}
+          </div>
+        )}
 
-            <p className="text-xs text-muted-foreground num-mono tracking-widest">{jt.redirect(countdown)}</p>
-          </CardFooter>
-        </Card>
+        {/* ── Wallet button + countdown ── */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <button
+            type="button"
+            onClick={() => window.location.replace('/client')}
+            style={{
+              width: '100%', padding: '16px', borderRadius: 18, fontSize: 15, fontWeight: 700,
+              background: 'linear-gradient(135deg,#6D28D9,#5B21B6)', color: '#fff', border: 'none',
+              cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 16px rgba(91,33,182,.35)',
+            }}
+          >
+            {jt.see_wallet}
+          </button>
+          <p style={{ textAlign: 'center', fontSize: 11, color: '#9CA3AF', fontFamily: 'monospace', letterSpacing: '.1em' }}>
+            {jt.redirect(countdown)}
+          </p>
+        </div>
       </div>
     )
   }
