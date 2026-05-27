@@ -2,9 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { createAdminClient } from '@/lib/supabase/server'
 import { NextResponse, type NextRequest } from 'next/server'
-import { createHash } from 'crypto'
-
-const hash = (p: string) => createHash('sha256').update(p).digest('hex')
+import { hashPassword } from '@/lib/password'
 
 export async function GET(req: NextRequest) {
   const restaurantId = req.cookies.get('fidele_restaurant_session')?.value
@@ -28,7 +26,7 @@ export async function POST(req: NextRequest) {
 
   const admin = await createAdminClient()
   const { data, error } = await (admin.from('staff') as any)
-    .insert({ restaurant_id: restaurantId, name, password_hash: hash(password), role: role ?? 'server' })
+    .insert({ restaurant_id: restaurantId, name, password_hash: await hashPassword(password), role: role ?? 'server' })
     .select('id, name, role').single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

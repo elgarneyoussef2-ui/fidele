@@ -3,6 +3,10 @@ export const dynamic = 'force-dynamic'
 import { createAdminClient } from '@/lib/supabase/server'
 import { NextResponse, type NextRequest } from 'next/server'
 
+function requireAdmin(req: NextRequest) {
+  return req.cookies.get('taghra_admin')?.value === 'authenticated'
+}
+
 const ALLOWED: Record<string, string> = {
   restaurants:          'id,name,description,phone,mad_per_point,points_expiry_months,accent_color,created_at',
   clients:              'id,restaurant_id,name,phone,points_balance,total_visits,total_spent,last_visit_at,created_at',
@@ -16,6 +20,8 @@ const DELETABLE = new Set(['clients', 'rewards', 'staff', 'qr_tokens', 'redempti
 const SEARCHABLE = new Set(['clients', 'staff', 'rewards'])
 
 export async function GET(req: NextRequest) {
+  if (!requireAdmin(req)) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+
   const { searchParams } = req.nextUrl
   const action = searchParams.get('action')
   const admin  = await createAdminClient()
@@ -55,6 +61,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  if (!requireAdmin(req)) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+
   const { searchParams } = req.nextUrl
   const table = searchParams.get('table') ?? ''
   const id    = searchParams.get('id')

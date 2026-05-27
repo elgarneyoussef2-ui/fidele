@@ -1,18 +1,16 @@
 export const dynamic = 'force-dynamic'
 
 import { createAdminClient } from '@/lib/supabase/server'
-import { NextResponse } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const restaurantId = req.cookies.get('fidele_restaurant_session')?.value
+  if (!restaurantId) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+
   const admin = await createAdminClient()
-
-  const { data: restaurant } = await (admin.from('restaurants') as any)
-    .select('id').order('created_at', { ascending: true }).limit(1).single()
-  if (!restaurant) return NextResponse.json([])
-
   const { data, error } = await (admin.from('redemption_requests') as any)
     .select('*')
-    .eq('restaurant_id', restaurant.id)
+    .eq('restaurant_id', restaurantId)
     .eq('status', 'pending')
     .order('created_at', { ascending: false })
 
@@ -20,7 +18,7 @@ export async function GET() {
   return NextResponse.json(data ?? [])
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   const { clientId, restaurantId, rewardId, rewardName, rewardPoints, clientName } = await req.json()
   if (!clientId || !restaurantId || !rewardId) return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
 

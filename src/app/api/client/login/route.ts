@@ -2,9 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { createHash } from 'crypto'
-
-const hashPassword = (p: string) => createHash('sha256').update(p).digest('hex')
+import { verifyPassword, hashPassword } from '@/lib/password'
 
 function adminSupabase() {
   return createClient(
@@ -31,8 +29,15 @@ export async function POST(req: NextRequest) {
   if (!client)
     return NextResponse.json({ error: 'Aucun compte trouvé pour ce numéro.' }, { status: 404 })
 
-  if (client.password_hash !== hashPassword(password))
+  const ok = await verifyPassword(password, client.password_hash ?? '')
+  if (!ok)
     return NextResponse.json({ error: 'Mot de passe incorrect.' }, { status: 401 })
+
+  // Upgrade legacy SHA-256 hash to bcrypt silently
+  if (client.password_hash && !client.password_hash.startsWith('$2')) {
+    const upgraded = await hashPassword(password)
+    await sb.from('clients').update({ password_hash: upgraded }).eq('id', client.id)
+  }
 
   return NextResponse.json({ name: client.name })
 }
