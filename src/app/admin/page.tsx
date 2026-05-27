@@ -6,6 +6,7 @@ import {
   Loader2, Plus, Trash2, ShieldCheck, LogOut,
   Users, Store, Database, ChevronLeft, ChevronRight,
   Search, RefreshCw, Sun, Moon, Pencil, X,
+  Inbox, Phone, MapPin, Mail, CheckCheck, XCircle, MessageSquare, Clock,
 } from 'lucide-react'
 
 // ─── Theme tokens ─────────────────────────────────────────────────────────────
@@ -772,9 +773,216 @@ function RestaurantsTab({ th }: { th: Th }) {
   )
 }
 
+// ─── Leads tab ───────────────────────────────────────────────────────────────
+
+type Lead = {
+  id: string; name: string; email: string; phone: string
+  location: string | null; status: string; notes: string | null; created_at: string
+}
+
+const LEAD_STATUS: Record<string, { label: string; bg: [string,string]; color: [string,string] }> = {
+  pending:   { label: 'En attente',  bg: ['rgba(251,191,36,.18)','#FFFBEB'], color: ['#FCD34D','#B45309'] },
+  contacted: { label: 'Contacté',    bg: ['rgba(96,165,250,.18)','#EFF6FF'],  color: ['#60A5FA','#1D4ED8'] },
+  converted: { label: 'Converti',    bg: ['rgba(52,211,153,.18)','#F0FDF4'], color: ['#34D399','#16A34A'] },
+  rejected:  { label: 'Refusé',      bg: ['rgba(252,165,165,.18)','#FEF2F2'],color: ['#FCA5A5','#DC2626'] },
+}
+
+function LeadsTab({ th }: { th: Th }) {
+  const [leads,    setLeads]    = useState<Lead[]>([])
+  const [loading,  setLoading]  = useState(true)
+  const [expanded, setExpanded] = useState<string | null>(null)
+  const [notes,    setNotes]    = useState<Record<string, string>>({})
+  const [saving,   setSaving]   = useState<string | null>(null)
+
+  async function load() {
+    setLoading(true)
+    const res  = await fetch('/api/admin/leads')
+    const data = await res.json()
+    const list: Lead[] = Array.isArray(data) ? data : []
+    setLeads(list)
+    const n: Record<string, string> = {}
+    list.forEach(l => { n[l.id] = l.notes ?? '' })
+    setNotes(n)
+    setLoading(false)
+  }
+
+  useEffect(() => { load() }, [])
+
+  async function updateStatus(id: string, status: string) {
+    setSaving(id)
+    await fetch('/api/admin/leads', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, status }) })
+    setSaving(null)
+    setLeads(prev => prev.map(l => l.id === id ? { ...l, status } : l))
+  }
+
+  async function saveNotes(id: string) {
+    setSaving(id)
+    await fetch('/api/admin/leads', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, notes: notes[id] }) })
+    setSaving(null)
+    setLeads(prev => prev.map(l => l.id === id ? { ...l, notes: notes[id] } : l))
+  }
+
+  async function deleteLead(id: string) {
+    if (!confirm('Supprimer cette demande ?')) return
+    await fetch('/api/admin/leads', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) })
+    setLeads(prev => prev.filter(l => l.id !== id))
+  }
+
+  const counts = {
+    total:     leads.length,
+    pending:   leads.filter(l => l.status === 'pending').length,
+    converted: leads.filter(l => l.status === 'converted').length,
+  }
+
+  const inp: React.CSSProperties = {
+    background: th.inpBg, border: `1px solid ${th.inpBorder}`,
+    color: th.inpColor, borderRadius: 10, fontSize: 13, fontFamily: 'inherit', outline: 'none',
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+
+      {/* Stats */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14 }}>
+        {[
+          { icon: <Inbox size={22} color={th.accent} />,       bg: th.accentSoft,             value: counts.total,     label: 'Total demandes' },
+          { icon: <Clock size={22} color="#D97706" />,          bg: 'rgba(251,191,36,.12)',     value: counts.pending,   label: 'En attente' },
+          { icon: <CheckCheck size={22} color="#16A34A" />,     bg: 'rgba(52,211,153,.12)',     value: counts.converted, label: 'Convertis' },
+        ].map((s, i) => (
+          <div key={i} style={{ background: th.card, border: `1px solid ${th.border}`, borderRadius: 20, padding: '18px 20px', display: 'flex', alignItems: 'center', gap: 14, boxShadow: `0 2px 12px ${th.shadow}` }}>
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: s.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              {s.icon}
+            </div>
+            <div>
+              <p style={{ fontSize: 28, fontWeight: 800, color: th.text, fontFamily: 'monospace', lineHeight: 1 }}>{s.value}</p>
+              <p style={{ fontSize: 10, fontWeight: 600, color: th.textMuted, marginTop: 4, textTransform: 'uppercase', letterSpacing: '.08em' }}>{s.label}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <h2 style={{ fontSize: 20, fontWeight: 700, color: th.text }}>Demandes d'inscription</h2>
+        <button onClick={load} style={{ ...inp, padding: '8px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <RefreshCw size={14} color={th.textFaint} />
+        </button>
+      </div>
+
+      {/* List */}
+      {loading ? (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}>
+          <Loader2 size={32} color={th.accent} style={{ animation: 'spin .8s linear infinite' }} />
+        </div>
+      ) : leads.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '80px 0', color: th.textFaint }}>
+          <Inbox size={56} style={{ margin: '0 auto 16px', display: 'block', opacity: .2 }} />
+          <p style={{ fontSize: 16, fontWeight: 700, color: th.textMuted }}>Aucune demande pour l'instant</p>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {leads.map(lead => {
+            const s = LEAD_STATUS[lead.status] ?? LEAD_STATUS.pending
+            const isOpen = expanded === lead.id
+            return (
+              <div key={lead.id} style={{ background: th.card, border: `1px solid ${th.border}`, borderRadius: 18, overflow: 'hidden', boxShadow: `0 2px 10px ${th.shadow}`, transition: 'box-shadow .2s' }}>
+                {/* Row */}
+                <div style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+                  {/* Avatar */}
+                  <div style={{ width: 42, height: 42, borderRadius: 12, background: th.accentSoft, color: th.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 17, flexShrink: 0 }}>
+                    {lead.name[0]?.toUpperCase()}
+                  </div>
+
+                  {/* Info */}
+                  <div style={{ flex: 1, minWidth: 160 }}>
+                    <p style={{ fontWeight: 700, fontSize: 15, color: th.text }}>{lead.name}</p>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 14px', marginTop: 4 }}>
+                      <span style={{ fontSize: 12, color: th.textMuted, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <Mail size={11} /> {lead.email}
+                      </span>
+                      <span style={{ fontSize: 12, color: th.textMuted, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <Phone size={11} /> {lead.phone}
+                      </span>
+                      {lead.location && (
+                        <span style={{ fontSize: 12, color: th.textMuted, display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <MapPin size={11} /> {lead.location}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Date */}
+                  <p style={{ fontSize: 11, color: th.textFaint, fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
+                    {new Date(lead.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                  </p>
+
+                  {/* Status badge + dropdown */}
+                  <span style={{
+                    padding: '4px 12px', borderRadius: 99, fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap',
+                    background: th.dark ? s.bg[0] : s.bg[1],
+                    color:      th.dark ? s.color[0] : s.color[1],
+                  }}>
+                    {s.label}
+                  </span>
+
+                  {/* Actions */}
+                  <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                    <select
+                      value={lead.status}
+                      onChange={e => updateStatus(lead.id, e.target.value)}
+                      disabled={saving === lead.id}
+                      style={{ ...inp, padding: '6px 10px', cursor: 'pointer', fontSize: 12 }}
+                    >
+                      {Object.entries(LEAD_STATUS).map(([k, v]) => (
+                        <option key={k} value={k}>{v.label}</option>
+                      ))}
+                    </select>
+                    <button onClick={() => setExpanded(isOpen ? null : lead.id)}
+                      title="Notes"
+                      style={{ padding: '7px 9px', borderRadius: 10, background: th.dark ? 'rgba(255,255,255,.06)' : '#F3F4F6', color: isOpen ? th.accent : th.textMuted, border: 'none', cursor: 'pointer' }}>
+                      <MessageSquare size={14} />
+                    </button>
+                    <button onClick={() => deleteLead(lead.id)}
+                      style={{ padding: '7px 9px', borderRadius: 10, background: th.dark ? 'rgba(252,165,165,.1)' : '#FEF2F2', color: th.dark ? '#FCA5A5' : '#EF4444', border: 'none', cursor: 'pointer' }}>
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Notes panel */}
+                {isOpen && (
+                  <div style={{ padding: '0 20px 18px', borderTop: `1px solid ${th.rowBorder}` }}>
+                    <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: th.accent, marginBottom: 8, marginTop: 14 }}>Notes internes</p>
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      <textarea
+                        value={notes[lead.id] ?? ''}
+                        onChange={e => setNotes(p => ({ ...p, [lead.id]: e.target.value }))}
+                        placeholder="Ajouter une note…"
+                        rows={2}
+                        style={{ ...inp, flex: 1, padding: '10px 14px', resize: 'vertical', lineHeight: 1.5 }}
+                      />
+                      <button
+                        onClick={() => saveNotes(lead.id)}
+                        disabled={saving === lead.id}
+                        style={{ padding: '10px 16px', borderRadius: 12, background: th.accent, color: '#fff', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700, opacity: saving === lead.id ? .6 : 1, whiteSpace: 'nowrap' }}>
+                        {saving === lead.id ? '…' : 'Sauver'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    </div>
+  )
+}
+
 // ─── Page root ────────────────────────────────────────────────────────────────
 
-type ActiveTab = 'restaurants' | 'database'
+type ActiveTab = 'restaurants' | 'leads' | 'database'
 
 export default function AdminPage() {
   const router = useRouter()
@@ -801,6 +1009,7 @@ export default function AdminPage() {
 
   const TABS: { key: ActiveTab; label: string; icon: React.ReactNode }[] = [
     { key: 'restaurants', label: 'Restaurants',     icon: <Store    size={16} /> },
+    { key: 'leads',       label: 'Demandes',        icon: <Inbox    size={16} /> },
     { key: 'database',    label: 'Base de données', icon: <Database size={16} /> },
   ]
 
@@ -852,9 +1061,9 @@ export default function AdminPage() {
 
       {/* Content */}
       <div style={{ maxWidth: 1100, margin: '0 auto', padding: '32px 24px' }}>
-        {activeTab === 'restaurants'
-          ? <RestaurantsTab th={th} />
-          : <DatabaseTab    th={th} />}
+        {activeTab === 'restaurants' ? <RestaurantsTab th={th} /> :
+         activeTab === 'leads'       ? <LeadsTab       th={th} /> :
+                                       <DatabaseTab    th={th} />}
       </div>
     </div>
   )
