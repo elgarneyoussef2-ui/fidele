@@ -1,6 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/server'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Users, CreditCard, Utensils, TrendingUp } from 'lucide-react'
+import { Users, Utensils, CreditCard, TrendingUp } from 'lucide-react'
 import VisitsChart from '@/components/dashboard/VisitsChart'
 import AppShell from '@/components/dashboard/AppShell'
 import RedemptionPanel from '@/components/dashboard/RedemptionPanel'
@@ -46,76 +45,113 @@ export default async function DashboardPage() {
     .limit(5)
 
   const stats = [
-    { label: 'Total Clients', value: fmt(totalClients ?? 0), icon: Users, color: 'text-primary', bg: 'bg-primary/10' },
-    { label: 'Visites ce mois', value: fmt(monthVisits ?? 0), icon: Utensils, color: 'text-accent', bg: 'bg-accent/10' },
-    { label: 'Points distribués', value: fmt(totalPoints), icon: CreditCard, color: 'text-green-600', bg: 'bg-green-50' },
-    { label: 'Clients actifs', value: fmt(totalClients ?? 0), icon: TrendingUp, color: 'text-fidele-violet-deep', bg: 'bg-fidele-violet-tint' },
+    { label: 'Total Clients',     value: fmt(totalClients ?? 0), icon: Users,       color: '#5B21B6', bg: '#EDE6FB' },
+    { label: 'Visites ce mois',   value: fmt(monthVisits  ?? 0), icon: Utensils,    color: '#B5781F', bg: '#FEF3C7' },
+    { label: 'Points distribués', value: fmt(totalPoints),       icon: CreditCard,  color: '#16A34A', bg: '#DCFCE7' },
+    { label: 'Clients actifs',    value: fmt(totalClients ?? 0), icon: TrendingUp,  color: '#0369A1', bg: '#E0F2FE' },
   ]
 
   return (
     <AppShell>
-      <div className="p-6 space-y-6 max-w-5xl mx-auto">
+      <div className="p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
 
-        <div>
-          <h1 className="text-3xl font-display italic text-foreground leading-none">{restaurant.name}</h1>
-          <p className="eyebrow mt-1 text-primary">Tableau de bord fidélité</p>
+        {/* ── Hero header ── */}
+        <div style={{
+          position: 'relative', overflow: 'hidden', borderRadius: 24,
+          background: '#15101F', color: '#fff', padding: '32px 36px',
+        }}>
+          {/* Logo watermark */}
+          <svg viewBox="0 0 100 100" aria-hidden style={{
+            position: 'absolute', right: -24, top: '50%', transform: 'translateY(-50%)',
+            width: 220, height: 220, color: 'rgba(255,255,255,0.05)', pointerEvents: 'none',
+          }}>
+            <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" strokeWidth="3" />
+            <circle cx="50" cy="50" r="11" fill="currentColor" />
+          </svg>
+
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            {/* Logomark + label */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+              <svg viewBox="0 0 100 100" width="28" height="28" style={{ color: 'rgba(255,255,255,0.4)' }} aria-hidden>
+                <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" strokeWidth="3" />
+                <circle cx="50" cy="50" r="11" fill="currentColor" />
+              </svg>
+              <span style={{ fontFamily: 'var(--font-sans)', fontSize: 11, fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)' }}>
+                Fidèle — Tableau de bord
+              </span>
+            </div>
+
+            <h1 style={{ fontFamily: 'var(--font-display), serif', fontStyle: 'italic', fontSize: 42, letterSpacing: '-0.02em', lineHeight: 1, color: '#fff', marginBottom: 8 }}>
+              {restaurant.name}
+            </h1>
+            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>
+              Programme de fidélité · Vue en temps réel
+            </p>
+          </div>
         </div>
 
-        {/* KPI */}
+        {/* ── KPI cards ── */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {stats.map(stat => (
-            <Card key={stat.label} className="shadow-card border-none">
-              <CardContent className="p-4">
-                <div className={`inline-flex p-2 rounded-lg ${stat.bg} ${stat.color} mb-3`}>
-                  <stat.icon className="h-4 w-4" />
+          {stats.map(stat => {
+            const Icon = stat.icon
+            return (
+              <div key={stat.label} style={{
+                background: '#fff', borderRadius: 20, padding: '24px 20px',
+                boxShadow: '0 4px 18px -8px rgba(21,16,31,.1)',
+                display: 'flex', flexDirection: 'column', gap: 16,
+              }}>
+                <div style={{ width: 40, height: 40, borderRadius: 12, background: stat.bg, color: stat.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Icon size={18} />
                 </div>
-                <p className="text-2xl font-bold text-foreground num-mono">{stat.value}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{stat.label}</p>
-              </CardContent>
-            </Card>
-          ))}
+                <div>
+                  <p style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 32, fontWeight: 800, color: '#15101F', lineHeight: 1, letterSpacing: '-0.03em' }}>{stat.value}</p>
+                  <p style={{ fontSize: 12, color: '#6B7280', marginTop: 6, fontWeight: 500 }}>{stat.label}</p>
+                </div>
+              </div>
+            )
+          })}
         </div>
 
-        {/* Demandes récompenses */}
+        {/* ── Redemption panel ── */}
         <RedemptionPanel />
 
-        {/* Chart */}
+        {/* ── Chart ── */}
         <VisitsChart />
 
-        {/* Activité live + Top clients */}
+        {/* ── Activity + Top clients ── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <LiveActivityFeed />
 
-          <Card className="shadow-card border-none">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base eyebrow">Top clients</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {(topClients ?? []).length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">Aucun client encore.</p>
-              )}
+          <div style={{ background: '#fff', borderRadius: 20, padding: '24px', boxShadow: '0 4px 18px -8px rgba(21,16,31,.1)' }}>
+            <p style={{ fontFamily: 'var(--font-sans)', fontSize: 11, fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#5B21B6', marginBottom: 20 }}>
+              Top clients
+            </p>
+            {(topClients ?? []).length === 0 && (
+              <p style={{ fontSize: 14, color: '#9CA3AF', textAlign: 'center', padding: '32px 0' }}>Aucun client encore.</p>
+            )}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {(topClients ?? []).map((client: any, i: number) => {
                 const ini = client.name.split(' ').map((w: string) => w[0]).slice(0, 2).join('').toUpperCase()
                 return (
-                  <div key={i} className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground shrink-0">
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <span style={{ width: 22, height: 22, borderRadius: '50%', background: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: '#6B7280', flexShrink: 0 }}>
                         {i + 1}
-                      </div>
-                      <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold shrink-0">
+                      </span>
+                      <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#EDE6FB', color: '#5B21B6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, flexShrink: 0 }}>
                         {ini}
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-foreground">{client.name}</p>
-                        <p className="text-xs text-muted-foreground">{client.total_visits ?? 0} visites</p>
+                        <p style={{ fontSize: 14, fontWeight: 600, color: '#15101F' }}>{client.name}</p>
+                        <p style={{ fontSize: 12, color: '#9CA3AF', marginTop: 1 }}>{client.total_visits ?? 0} visite{(client.total_visits ?? 0) > 1 ? 's' : ''}</p>
                       </div>
                     </div>
-                    <p className="font-bold text-sm text-primary num-mono">{fmt(client.points_balance ?? 0)} pts</p>
+                    <p style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 14, fontWeight: 800, color: '#5B21B6' }}>{fmt(client.points_balance ?? 0)} pts</p>
                   </div>
                 )
               })}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
 
       </div>
