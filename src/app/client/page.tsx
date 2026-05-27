@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
+import { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react'
 import { T, type Lang, type Tr } from '@/lib/i18n'
 
 const ScannerScreen = lazy(() => import('./ScannerScreen'))
@@ -127,18 +127,21 @@ const CSS = `
   /* RTL overrides */
   [dir="rtl"] .c-sidebar { border-right: none; border-left: .5px solid rgba(21, 16, 31, 0.14); }
 
+  /* Tab bar scroll-aware */
+  .c-tabbar { transition: transform .32s cubic-bezier(.4,0,.2,1); }
+
   /* Install banner */
   .install-wrap {
     position: fixed;
-    bottom: calc(60px + env(safe-area-inset-bottom, 0px));
     left: 0; right: 0;
     z-index: 200;
     padding: 0 12px 6px;
     pointer-events: none;
+    transition: bottom .32s cubic-bezier(.4,0,.2,1);
   }
   .install-wrap > * { pointer-events: auto; }
   @media (min-width: 1024px) {
-    .install-wrap { bottom: 24px; max-width: 420px; left: 270px; right: auto; }
+    .install-wrap { max-width: 420px; left: 270px; right: auto; }
   }
   @keyframes slideUp {
     from { opacity: 0; transform: translateY(16px); }
@@ -214,9 +217,9 @@ function Sidebar({ onScan, isHome, t, isRtl, onLangToggle }: { onScan: () => voi
   )
 }
 
-function TabBar({ onScan, isHome, t }: { onScan: () => void; isHome: boolean; t: Tr }) {
+function TabBar({ onScan, isHome, t, hidden }: { onScan: () => void; isHome: boolean; t: Tr; hidden: boolean }) {
   return (
-    <nav className="c-tabbar">
+    <nav className="c-tabbar" style={{ transform: hidden ? 'translateY(100%)' : 'translateY(0)' }}>
       <div className="c-tab" style={{ color: isHome ? '#5B21B6' : '#2A2236' }}>
         <IconHome />
         <span className="c-tab-label">{t.home_tab}</span>
@@ -809,6 +812,8 @@ export default function ClientApp() {
   const [installPrompt, setInstallPrompt] = useState<any>(null)
   const [isIOS,         setIsIOS]         = useState(false)
   const [showBanner,    setShowBanner]    = useState(false)
+  const [tabHidden,     setTabHidden]     = useState(false)
+  const lastScrollY = useRef(0)
 
   const t      = T[lang]
   const isRtl  = lang === 'ar'
@@ -887,6 +892,15 @@ export default function ClientApp() {
     if (phone) loadData(phone)
   }
 
+  function handleScroll(e: React.UIEvent<HTMLDivElement>) {
+    const y = e.currentTarget.scrollTop
+    const delta = y - lastScrollY.current
+    if (Math.abs(delta) > 6) {
+      setTabHidden(delta > 0 && y > 80)
+      lastScrollY.current = y
+    }
+  }
+
   function handleInstall() {
     if (installPrompt) {
       installPrompt.prompt()
@@ -934,19 +948,19 @@ export default function ClientApp() {
       <div className="c-root" dir={isRtl ? 'rtl' : 'ltr'}>
         <Sidebar isHome={isHome} onScan={() => setShowScanner(true)} t={t} isRtl={isRtl} onLangToggle={toggleLang} />
         <div className="c-main">
-          <div className="c-scroll">
+          <div className="c-scroll" onScroll={handleScroll}>
             {isHome
               ? <HomeScreen clients={clients} name={clientName} onOpen={id => setScreen(id)} onScan={() => setShowScanner(true)} t={t} isRtl={isRtl} onLangToggle={toggleLang} />
               : activeClient
                 ? <DetailScreen client={activeClient} clientName={clientName} onBack={() => setScreen('home')} t={t} isRtl={isRtl} />
                 : null}
           </div>
-          <TabBar isHome={isHome} onScan={() => setShowScanner(true)} t={t} />
+          <TabBar isHome={isHome} onScan={() => setShowScanner(true)} t={t} hidden={tabHidden} />
         </div>
       </div>
 
       {showBanner && (
-        <div className="install-wrap">
+        <div className="install-wrap" style={{ bottom: tabHidden ? 'calc(8px + env(safe-area-inset-bottom, 0px))' : 'calc(62px + env(safe-area-inset-bottom, 0px))' }}>
           <InstallBanner
             lang={lang} isIOS={isIOS} hasPrompt={!!installPrompt}
             onInstall={handleInstall} onDismiss={dismissBanner} isRtl={isRtl}
