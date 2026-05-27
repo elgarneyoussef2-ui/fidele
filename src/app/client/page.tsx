@@ -126,6 +126,25 @@ const CSS = `
 
   /* RTL overrides */
   [dir="rtl"] .c-sidebar { border-right: none; border-left: .5px solid rgba(21, 16, 31, 0.14); }
+
+  /* Install banner */
+  .install-wrap {
+    position: fixed;
+    bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+    left: 0; right: 0;
+    z-index: 200;
+    padding: 0 12px 6px;
+    pointer-events: none;
+  }
+  .install-wrap > * { pointer-events: auto; }
+  @media (min-width: 1024px) {
+    .install-wrap { bottom: 24px; max-width: 420px; left: 270px; right: auto; }
+  }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .install-anim { animation: slideUp .3s cubic-bezier(.34,1.2,.64,1) both; }
 `
 
 // ─── SVG Icons ────────────────────────────────────────────────────────────────
@@ -724,28 +743,32 @@ function InstallBanner({ lang, isIOS, hasPrompt, onInstall, onDismiss, isRtl }: 
 }) {
   const i = INSTALL[lang]
   return (
-    <div dir={isRtl ? 'rtl' : 'ltr'} style={{ margin: '0 0 20px', background: '#EDE6FB', border: '1px solid #C4B5FD', borderRadius: 20, padding: '16px 18px', display: 'flex', alignItems: 'flex-start', gap: 14 }}>
-      <div style={{ width: 42, height: 42, borderRadius: 14, background: '#5B21B6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+    <div dir={isRtl ? 'rtl' : 'ltr'} className="install-anim" style={{ background: '#fff', border: '1px solid #C4B5FD', borderRadius: 20, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14, boxShadow: '0 8px 32px rgba(91,33,182,.18)' }}>
+      <div style={{ width: 44, height: 44, borderRadius: 14, background: '#5B21B6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
         <svg viewBox="0 0 100 100" width="22" height="22" aria-hidden>
           <circle cx="50" cy="50" r="42" fill="none" stroke="white" strokeWidth="8" />
           <circle cx="50" cy="50" r="14" fill="white" />
         </svg>
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ fontSize: 13, fontWeight: 700, color: '#3B0764', marginBottom: 2 }}>{i.title}</p>
-        <p style={{ fontSize: 12, color: '#6D28D9', lineHeight: 1.4, marginBottom: 12 }}>{i.desc}</p>
-        {hasPrompt ? (
-          <button
-            onClick={onInstall}
-            style={{ background: '#5B21B6', color: '#fff', border: 'none', borderRadius: 10, padding: '9px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
-          >
-            {i.btn}
-          </button>
-        ) : isIOS ? (
-          <p style={{ fontSize: 12, color: '#5B21B6', fontWeight: 600 }}>{i.ios}</p>
-        ) : null}
+        <p style={{ fontSize: 13, fontWeight: 700, color: '#15101F' }}>{i.title}</p>
+        <p style={{ fontSize: 12, color: '#6D28D9', marginTop: 2 }}>
+          {hasPrompt ? i.desc : isIOS ? i.ios : i.desc}
+        </p>
       </div>
-      <button onClick={onDismiss} style={{ fontSize: 18, color: '#C4B5FD', lineHeight: 1, flexShrink: 0, padding: '0 0 0 4px' }}>×</button>
+      {hasPrompt ? (
+        <button
+          onClick={onInstall}
+          style={{ background: '#5B21B6', color: '#fff', border: 'none', borderRadius: 12, padding: '10px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0, whiteSpace: 'nowrap' }}
+        >
+          {i.btn}
+        </button>
+      ) : (
+        <button onClick={onDismiss} style={{ fontSize: 20, color: '#C4B5FD', lineHeight: 1, flexShrink: 0, padding: '0 4px' }}>×</button>
+      )}
+      {hasPrompt && (
+        <button onClick={onDismiss} style={{ fontSize: 20, color: '#C4B5FD', lineHeight: 1, flexShrink: 0, padding: '0 4px' }}>×</button>
+      )}
     </div>
   )
 }
@@ -837,20 +860,23 @@ export default function ClientApp() {
     if (window.matchMedia('(display-mode: standalone)').matches) return
     if (localStorage.getItem('fidele_install_dismissed')) return
 
-    const ios = /iPad|iPhone|iPod/.test(navigator.userAgent)
-    setIsIOS(ios)
-    if (ios) {
-      const t = setTimeout(() => setShowBanner(true), 3000)
-      return () => clearTimeout(t)
-    }
+    setIsIOS(/iPad|iPhone|iPod/.test(navigator.userAgent))
+    setShowBanner(true)
 
-    const handler = (e: Event) => {
+    const promptHandler = (e: Event) => {
       e.preventDefault()
       setInstallPrompt(e)
-      setShowBanner(true)
     }
-    window.addEventListener('beforeinstallprompt', handler)
-    return () => window.removeEventListener('beforeinstallprompt', handler)
+    const installedHandler = () => {
+      setShowBanner(false)
+      localStorage.setItem('fidele_install_dismissed', '1')
+    }
+    window.addEventListener('beforeinstallprompt', promptHandler)
+    window.addEventListener('appinstalled', installedHandler)
+    return () => {
+      window.removeEventListener('beforeinstallprompt', promptHandler)
+      window.removeEventListener('appinstalled', installedHandler)
+    }
   }, [])
 
   const activeClient = screen !== 'home' ? (clients.find(c => c.id === screen) ?? null) : null
@@ -866,7 +892,11 @@ export default function ClientApp() {
   function handleInstall() {
     if (!installPrompt) return
     installPrompt.prompt()
-    installPrompt.userChoice.then(() => { setInstallPrompt(null); setShowBanner(false) })
+    installPrompt.userChoice.then(() => {
+      setInstallPrompt(null)
+      setShowBanner(false)
+      localStorage.setItem('fidele_install_dismissed', '1')
+    })
   }
 
   function dismissBanner() {
@@ -905,14 +935,6 @@ export default function ClientApp() {
         <Sidebar isHome={isHome} onScan={() => setShowScanner(true)} t={t} isRtl={isRtl} onLangToggle={toggleLang} />
         <div className="c-main">
           <div className="c-scroll">
-            {isHome && showBanner && (installPrompt || isIOS) && (
-              <div style={{ padding: '16px 16px 0' }}>
-                <InstallBanner
-                  lang={lang} isIOS={isIOS} hasPrompt={!!installPrompt}
-                  onInstall={handleInstall} onDismiss={dismissBanner} isRtl={isRtl}
-                />
-              </div>
-            )}
             {isHome
               ? <HomeScreen clients={clients} name={clientName} onOpen={id => setScreen(id)} onScan={() => setShowScanner(true)} t={t} isRtl={isRtl} onLangToggle={toggleLang} />
               : activeClient
@@ -922,6 +944,16 @@ export default function ClientApp() {
           <TabBar isHome={isHome} onScan={() => setShowScanner(true)} t={t} />
         </div>
       </div>
+
+      {showBanner && (
+        <div className="install-wrap">
+          <InstallBanner
+            lang={lang} isIOS={isIOS} hasPrompt={!!installPrompt}
+            onInstall={handleInstall} onDismiss={dismissBanner} isRtl={isRtl}
+          />
+        </div>
+      )}
+
       {showScanner && (
         <Suspense fallback={null}>
           <ScannerScreen onClose={handleScannerClose} />
