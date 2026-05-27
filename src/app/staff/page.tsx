@@ -115,18 +115,16 @@ function QRTab() {
       {!qrDataUrl ? (
         <div style={card}>
           <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#5B21B6', marginBottom: 16 }}>Montant payé (MAD)</p>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <input
-              type="number" min={1} placeholder="Ex: 150" value={amount}
-              onChange={e => setAmount(e.target.value)}
-              style={{ flex: 1, border: '1.5px solid rgba(21,16,31,.12)', borderRadius: 12, padding: '12px 16px', fontSize: 20, fontFamily: 'var(--font-mono), monospace', outline: 'none', background: '#fff', color: '#15101F' }}
-              autoFocus
-            />
-            <button onClick={generate} disabled={amountNum <= 0 || loading} style={{ background: '#5B21B6', color: '#fff', borderRadius: 12, padding: '12px 20px', fontSize: 15, fontWeight: 700, opacity: amountNum <= 0 || loading ? .4 : 1, display: 'flex', alignItems: 'center', gap: 8 }}>
-              {loading ? <Loader2 size={18} style={{ animation: 'spin .8s linear infinite' }} /> : <QrCode size={18} />}
-              Générer
-            </button>
-          </div>
+          <input
+            type="number" min={1} placeholder="Ex: 150" value={amount}
+            onChange={e => setAmount(e.target.value)}
+            style={{ width: '100%', border: '1.5px solid rgba(21,16,31,.12)', borderRadius: 12, padding: '14px 16px', fontSize: 22, fontFamily: 'var(--font-mono), monospace', outline: 'none', background: '#fff', color: '#15101F' }}
+            autoFocus
+          />
+          <button onClick={generate} disabled={amountNum <= 0 || loading} style={{ width: '100%', background: '#5B21B6', color: '#fff', borderRadius: 12, padding: '15px', fontSize: 16, fontWeight: 700, opacity: amountNum <= 0 || loading ? .4 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 10 }}>
+            {loading ? <Loader2 size={18} style={{ animation: 'spin .8s linear infinite' }} /> : <QrCode size={18} />}
+            Générer le QR Code
+          </button>
           {amountNum > 0 && (
             <div style={{ marginTop: 14, background: '#EDE6FB', borderRadius: 12, padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: 13, color: '#5B21B6', fontWeight: 500 }}>Points à créditer</span>
