@@ -6,12 +6,13 @@ const ScannerScreen = lazy(() => import('./ScannerScreen'))
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Visit = { id?: string; amount_paid: number; points_earned: number; created_at: string }
+type Visit = { id?: string; amount_paid: number; points_earned: number; created_at: string; expires_at?: string | null; points_expired?: boolean }
 type Client = {
   id: string; restaurant_id: string; name: string; phone: string
   points_balance: number; total_visits: number; last_visit_at: string | null
   restaurants: { id: string; name: string; description?: string | null; logo_url?: string | null; cover_url?: string | null; accent_color?: string | null }
   visits: Visit[]
+  next_expiry?: { id: string; points_earned: number; expires_at: string } | null
 }
 type Reward = { id: string; name: string; description: string; points_cost: number }
 
@@ -518,6 +519,25 @@ function DetailScreen({ client, clientName, onBack }: {
 
       {/* Body */}
       <div style={{ padding: '32px 24px' }}>
+
+        {/* Expiry warning */}
+        {client.next_expiry && (() => {
+          const daysLeft = Math.ceil((new Date(client.next_expiry.expires_at).getTime() - Date.now()) / 86400000)
+          const urgent = daysLeft <= 30
+          return (
+            <div style={{ marginBottom: 20, background: urgent ? '#FEF2F2' : '#FFFBEB', border: `1px solid ${urgent ? '#FECACA' : '#FDE68A'}`, borderRadius: 14, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span style={{ fontSize: 20 }}>{urgent ? '⚠️' : '⏳'}</span>
+              <div>
+                <p style={{ fontSize: 13, fontWeight: 700, color: urgent ? '#DC2626' : '#B45309' }}>
+                  {client.next_expiry.points_earned} pt{client.next_expiry.points_earned > 1 ? 's' : ''} expirent dans {daysLeft} jour{daysLeft > 1 ? 's' : ''}
+                </p>
+                <p style={{ fontSize: 12, color: urgent ? '#EF4444' : '#D97706', marginTop: 2 }}>
+                  Utilisez vos points avant le {new Date(client.next_expiry.expires_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                </p>
+              </div>
+            </div>
+          )
+        })()}
 
         {/* Rewards */}
         {rewardsLoaded && (

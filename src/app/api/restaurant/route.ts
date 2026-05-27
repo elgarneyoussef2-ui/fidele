@@ -17,7 +17,7 @@ export async function GET() {
 
 export async function PATCH(req: NextRequest) {
   const body = await req.json().catch(() => ({}))
-  const { name, description, logo_url, cover_url, accent_color, phone } = body
+  const { name, description, logo_url, cover_url, accent_color, phone, points_expiry_months } = body
 
   const admin = await createAdminClient()
   const { data: restaurant } = await (admin.from('restaurants') as any)
@@ -29,12 +29,13 @@ export async function PATCH(req: NextRequest) {
   if (!restaurant) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const updates: Record<string, any> = {}
-  if (name        !== undefined) updates.name         = name
-  if (description !== undefined) updates.description  = description
-  if (logo_url    !== undefined) updates.logo_url     = logo_url
-  if (cover_url   !== undefined) updates.cover_url    = cover_url
-  if (accent_color !== undefined) updates.accent_color = accent_color
-  if (phone       !== undefined) updates.phone        = phone
+  if (name                 !== undefined) updates.name                 = name
+  if (description          !== undefined) updates.description          = description
+  if (logo_url             !== undefined) updates.logo_url             = logo_url
+  if (cover_url            !== undefined) updates.cover_url            = cover_url
+  if (accent_color         !== undefined) updates.accent_color         = accent_color
+  if (phone                !== undefined) updates.phone                = phone
+  if (points_expiry_months !== undefined) updates.points_expiry_months = points_expiry_months
 
   const { error } = await (admin.from('restaurants') as any)
     .update(updates)

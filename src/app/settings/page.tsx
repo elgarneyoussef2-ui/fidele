@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import AppShell from '@/components/dashboard/AppShell'
-import { CheckCircle2, Loader2, Store, Image as ImageIcon, FileText, Phone, Palette } from 'lucide-react'
+import { CheckCircle2, Loader2, Store, Image as ImageIcon, FileText, Phone, Palette, Clock } from 'lucide-react'
 
 type RestaurantData = {
   id: string
@@ -12,21 +12,24 @@ type RestaurantData = {
   cover_url: string | null
   accent_color: string | null
   phone: string | null
+  points_expiry_months: number | null
 }
 
 const COLORS = ['#5B21B6', '#0369A1', '#065F46', '#B45309', '#BE185D', '#DC2626', '#374151']
 
 export default function SettingsPage() {
-  const [data,    setData]    = useState<RestaurantData | null>(null)
-  const [name,    setName]    = useState('')
-  const [desc,    setDesc]    = useState('')
-  const [logo,    setLogo]    = useState('')
-  const [cover,   setCover]   = useState('')
-  const [color,   setColor]   = useState('#5B21B6')
-  const [phone,   setPhone]   = useState('')
-  const [saving,  setSaving]  = useState(false)
-  const [saved,   setSaved]   = useState(false)
-  const [error,   setError]   = useState('')
+  const [data,         setData]         = useState<RestaurantData | null>(null)
+  const [name,         setName]         = useState('')
+  const [desc,         setDesc]         = useState('')
+  const [logo,         setLogo]         = useState('')
+  const [cover,        setCover]        = useState('')
+  const [color,        setColor]        = useState('#5B21B6')
+  const [phone,        setPhone]        = useState('')
+  const [expiryEnabled, setExpiryEnabled] = useState(true)
+  const [expiryMonths,  setExpiryMonths]  = useState(12)
+  const [saving,       setSaving]       = useState(false)
+  const [saved,        setSaved]        = useState(false)
+  const [error,        setError]        = useState('')
 
   useEffect(() => {
     fetch('/api/restaurant')
@@ -40,6 +43,8 @@ export default function SettingsPage() {
         setCover(d.cover_url ?? '')
         setColor(d.accent_color ?? '#5B21B6')
         setPhone(d.phone ?? '')
+        setExpiryEnabled(d.points_expiry_months !== null)
+        setExpiryMonths(d.points_expiry_months ?? 12)
       })
   }, [])
 
@@ -49,7 +54,7 @@ export default function SettingsPage() {
     const res = await fetch('/api/restaurant', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, description: desc, logo_url: logo || null, cover_url: cover || null, accent_color: color, phone }),
+      body: JSON.stringify({ name, description: desc, logo_url: logo || null, cover_url: cover || null, accent_color: color, phone, points_expiry_months: expiryEnabled ? expiryMonths : null }),
     })
     setSaving(false)
     if (!res.ok) { const d = await res.json(); setError(d.error ?? 'Erreur'); return }
@@ -183,6 +188,48 @@ export default function SettingsPage() {
               <input type="color" value={color} onChange={e => setColor(e.target.value)}
                 style={{ width: 32, height: 32, borderRadius: '50%', border: '1.5px solid rgba(21,16,31,.12)', padding: 2, cursor: 'pointer', background: 'none' }} />
             </div>
+          </div>
+
+          {/* Expiration des points */}
+          <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 16, padding: '20px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#B45309', marginBottom: 16 }}>
+              <Clock size={13} /> Expiration des points
+            </label>
+
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: expiryEnabled ? 16 : 0 }}>
+              <div>
+                <p style={{ fontSize: 14, fontWeight: 600, color: '#15101F' }}>Activer l'expiration</p>
+                <p style={{ fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>Les points non utilisés seront annulés automatiquement</p>
+              </div>
+              <button type="button" onClick={() => setExpiryEnabled(v => !v)} style={{
+                width: 48, height: 26, borderRadius: 99, border: 'none', cursor: 'pointer', transition: 'all .2s',
+                background: expiryEnabled ? '#5B21B6' : '#D1D5DB', position: 'relative', flexShrink: 0,
+              }}>
+                <span style={{ position: 'absolute', top: 3, left: expiryEnabled ? 25 : 3, width: 20, height: 20, borderRadius: '50%', background: '#fff', transition: 'left .2s', boxShadow: '0 1px 4px rgba(0,0,0,.2)' }} />
+              </button>
+            </div>
+
+            {expiryEnabled && (
+              <div>
+                <p style={{ fontSize: 12, color: '#B45309', fontWeight: 500, marginBottom: 10 }}>
+                  Points expirés après <strong>{expiryMonths} mois</strong> d'inactivité
+                </p>
+                <input
+                  type="range" min={1} max={24} step={1} value={expiryMonths}
+                  onChange={e => setExpiryMonths(Number(e.target.value))}
+                  style={{ width: '100%', accentColor: '#5B21B6' }}
+                />
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#9CA3AF', marginTop: 4 }}>
+                  <span>1 mois</span>
+                  <span>6 mois</span>
+                  <span>12 mois</span>
+                  <span>24 mois</span>
+                </div>
+                <div style={{ marginTop: 12, background: '#FEF3C7', borderRadius: 10, padding: '10px 14px', fontSize: 12, color: '#92400E', lineHeight: 1.6 }}>
+                  💡 Les clients recevront une alerte 60 jours avant expiration dans leur portefeuille.
+                </div>
+              </div>
+            )}
           </div>
 
           {error && (

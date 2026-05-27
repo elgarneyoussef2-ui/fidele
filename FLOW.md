@@ -335,3 +335,55 @@ status (pending | accepted | rejected)
 | **Une demande à la fois** | Un client ne peut avoir qu'une demande `pending` par récompense |
 | **Paliers** | Bronze 0–500 · Argent 501–1000 · Or 1001+ |
 | **Multi-restaurant** | Un client peut être fidèle à plusieurs restaurants avec un seul compte téléphone |
+| **Expiration des points** | Configurable par le gérant (1–24 mois, ou désactivé). Voir section ci-dessous. |
+
+---
+
+## Expiration des points
+
+### Pourquoi ?
+
+Des points qui n'expirent jamais constituent un **passif comptable croissant** pour le restaurant : chaque point est une promesse de prestation future. Sans expiration, ce passif s'accumule indéfiniment sur des clients inactifs qui ne reviendront probablement jamais.
+
+### Comment ça marche
+
+```
+Gérant configure dans /settings :
+  → "Expiration activée — 12 mois"
+
+Client visite le restaurant → visite créée :
+  expires_at = created_at + 12 mois
+  (ex: visite le 01/06/2025 → expires_at = 01/06/2026)
+
+Au prochain fetch des données client (/api/client/data) :
+  → Détecte les visites dont expires_at < now() ET points_expired = false
+  → Déduit les points expirés du solde : points_balance -= points_perdus
+  → Marque les visites : points_expired = true
+  → Retourne le nouveau solde
+
+Client voit dans son portefeuille :
+  ⏳ "18 pts expirent dans 45 jours — avant le 01/06/2026"
+  ⚠️  "18 pts expirent dans 12 jours — avant le 01/06/2026"  (rouge si < 30j)
+```
+
+### Schéma des champs ajoutés
+
+```
+restaurants
+  points_expiry_months INT (null = jamais)
+
+visits
+  expires_at      TIMESTAMPTZ (null si pas d'expiration)
+  points_expired  BOOLEAN DEFAULT false
+```
+
+### Exemple chiffré
+
+| Date | Événement | Points gagnés | Expire le | Solde effectif |
+|---|---|---|---|---|
+| Jan 2025 | Visite 200 MAD | +20 pts | Jan 2026 | 20 pts |
+| Mars 2025 | Visite 150 MAD | +15 pts | Mars 2026 | 35 pts |
+| **Jan 2026** | **Expiration** | **-20 pts** | — | **15 pts** |
+| Fév 2026 | Visite 100 MAD | +10 pts | Fév 2027 | 25 pts |
+
+> Le client est alerté dès 60 jours avant expiration, l'incitant à revenir et à utiliser ses points.

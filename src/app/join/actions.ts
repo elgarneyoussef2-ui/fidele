@@ -28,6 +28,11 @@ export async function processJoinWithToken(input: { token: string; phone: string
   const amount       = Number(qrToken.amount)
 
   try {
+    // Get expiry policy from restaurant
+    const { data: resto } = await (admin.from('restaurants') as any)
+      .select('points_expiry_months').eq('id', restaurantId).single()
+    const expiryMonths: number | null = resto?.points_expiry_months ?? null
+
     const { data: existing } = await (admin.from('clients') as any)
       .select('*').eq('phone', phone).eq('restaurant_id', restaurantId).maybeSingle()
 
@@ -40,13 +45,22 @@ export async function processJoinWithToken(input: { token: string; phone: string
       currentClient = newClient
     }
 
-    const pointsToEarn  = Math.max(0, Math.floor(amount / 10))
-    const oldBalance    = Number(currentClient.points_balance) || 0
+    const pointsToEarn   = Math.max(0, Math.floor(amount / 10))
+    const oldBalance     = Number(currentClient.points_balance) || 0
     const updatedBalance = oldBalance + pointsToEarn
+
+    // Calculate expires_at for this visit
+    let expiresAt: string | null = null
+    if (expiryMonths) {
+      const d = new Date()
+      d.setMonth(d.getMonth() + expiryMonths)
+      expiresAt = d.toISOString()
+    }
 
     const { error: ve } = await (admin.from('visits') as any).insert({
       client_id: currentClient.id, restaurant_id: restaurantId,
       amount_paid: amount, points_earned: pointsToEarn,
+      expires_at: expiresAt,
     })
     if (ve) throw ve
 
