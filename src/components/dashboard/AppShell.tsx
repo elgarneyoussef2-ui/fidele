@@ -3,15 +3,15 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { LayoutDashboard, Gift, QrCode, Settings } from 'lucide-react'
+import { LayoutDashboard, Gift, Settings, Users } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Logomark } from '@/components/brand/Logomark'
 
 const NAV = [
-  { href: '/dashboard',  label: 'Dashboard',    icon: LayoutDashboard },
-  { href: '/generate-qr', label: 'QR Code',     icon: QrCode },
-  { href: '/rewards',    label: 'Récompenses',  icon: Gift },
-  { href: '/settings',   label: 'Paramètres',   icon: Settings },
+  { href: '/dashboard',       label: 'Dashboard',   icon: LayoutDashboard },
+  { href: '/rewards',         label: 'Récompenses', icon: Gift },
+  { href: '/dashboard/staff', label: 'Équipe',      icon: Users },
+  { href: '/settings',        label: 'Paramètres',  icon: Settings },
 ]
 
 export default function AppShell({ children }: { children: React.ReactNode }) {

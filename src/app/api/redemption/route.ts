@@ -32,6 +32,10 @@ export async function POST(req: Request) {
   if ((client.points_balance ?? 0) < rewardPoints)
     return NextResponse.json({ error: 'Solde insuffisant' }, { status: 400 })
 
+  const { data: existing } = await (admin.from('redemption_requests') as any)
+    .select('id').eq('client_id', clientId).eq('reward_id', rewardId).eq('status', 'pending').maybeSingle()
+  if (existing) return NextResponse.json({ error: 'Une demande est déjà en attente pour cette récompense.' }, { status: 409 })
+
   const { data, error } = await (admin.from('redemption_requests') as any)
     .insert({ client_id: clientId, restaurant_id: restaurantId, reward_id: rewardId, reward_name: rewardName, reward_points: rewardPoints, client_name: clientName })
     .select().single()

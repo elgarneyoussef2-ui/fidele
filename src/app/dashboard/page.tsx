@@ -2,7 +2,6 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { Users, Utensils, CreditCard, TrendingUp } from 'lucide-react'
 import VisitsChart from '@/components/dashboard/VisitsChart'
 import AppShell from '@/components/dashboard/AppShell'
-import RedemptionPanel from '@/components/dashboard/RedemptionPanel'
 import LiveActivityFeed from '@/components/dashboard/LiveActivityFeed'
 
 function fmt(n: number) {
@@ -111,9 +110,6 @@ export default async function DashboardPage() {
             )
           })}
         </div>
-
-        {/* ── Redemption panel ── */}
-        <RedemptionPanel />
 
         {/* ── Chart ── */}
         <VisitsChart />
