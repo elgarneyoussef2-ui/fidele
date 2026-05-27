@@ -1,24 +1,43 @@
-import { createClient } from '@/lib/supabase/server'
-import { NextResponse } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
+import { NextRequest, NextResponse } from 'next/server'
 
-export async function POST(req: Request) {
+function makeClient(req: NextRequest, res: NextResponse) {
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() { return req.cookies.getAll() },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            res.cookies.set(name, value, options as any)
+          )
+        },
+      },
+    }
+  )
+}
+
+export async function POST(req: NextRequest) {
   const { email, password } = await req.json()
   if (!email || !password) {
     return NextResponse.json({ error: 'Email et mot de passe requis.' }, { status: 400 })
   }
 
-  const supabase = await createClient()
+  const response = NextResponse.json({ ok: true })
+  const supabase = makeClient(req, response)
   const { error } = await supabase.auth.signInWithPassword({ email, password })
 
   if (error) {
     return NextResponse.json({ error: 'Identifiants incorrects.' }, { status: 401 })
   }
 
-  return NextResponse.json({ ok: true })
+  return response
 }
 
-export async function DELETE() {
-  const supabase = await createClient()
+export async function DELETE(req: NextRequest) {
+  const response = NextResponse.json({ ok: true })
+  const supabase = makeClient(req, response)
   await supabase.auth.signOut()
-  return NextResponse.json({ ok: true })
+  return response
 }
