@@ -60,7 +60,7 @@ export default function LandingPage() {
       body: JSON.stringify({ email, password }),
     })
     if (res.ok) {
-      router.push('/dashboard')
+      window.location.href = '/dashboard'
     } else {
       const d = await res.json()
       setLoginErr(d.error ?? 'Identifiants incorrects.')
