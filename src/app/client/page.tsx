@@ -59,18 +59,30 @@ const initials = (s: string) =>
 
 const INSTALL = {
   fr: {
-    title: 'Installer l\'app Fidèle',
-    desc:  'Accédez à vos points depuis l\'écran d\'accueil.',
-    btn:   'Ajouter à l\'écran d\'accueil',
-    ios:   'Appuyez sur ⬆ puis « Sur l\'écran d\'accueil »',
-    later: 'Plus tard',
+    title:       'Installer Fidèle',
+    subtitle:    "Accédez à vos points directement depuis votre écran d'accueil.",
+    install_btn: 'Installer maintenant',
+    close:       'Fermer',
+    ios_1:       "Appuyez sur l'icône de partage",
+    ios_1b:      'en bas de Safari',
+    ios_2:       'Puis choisissez',
+    ios_2b:      "« Sur l'écran d'accueil »",
+    and_prompt:  'Appuyez sur le bouton ci-dessous pour installer.',
+    and_manual:  "Dans Chrome : menu ⋮ → Ajouter à l'écran d'accueil",
+    other:       "Dans votre navigateur : cherchez « Ajouter à l'écran d'accueil ».",
   },
   ar: {
-    title: 'تثبيت تطبيق Fidèle',
-    desc:  'الوصول إلى نقاطك من الشاشة الرئيسية.',
-    btn:   'إضافة إلى الشاشة الرئيسية',
-    ios:   'اضغط ⬆ ثم « إضافة إلى الشاشة الرئيسية »',
-    later: 'لاحقاً',
+    title:       'تثبيت Fidèle',
+    subtitle:    'الوصول إلى نقاطك مباشرة من شاشتك الرئيسية.',
+    install_btn: 'تثبيت الآن',
+    close:       'إغلاق',
+    ios_1:       'اضغط على أيقونة المشاركة',
+    ios_1b:      'في أسفل Safari',
+    ios_2:       'ثم اختر',
+    ios_2b:      '« إضافة إلى الشاشة الرئيسية »',
+    and_prompt:  'اضغط على الزر أدناه للتثبيت.',
+    and_manual:  'في Chrome: القائمة ⋮ ← إضافة إلى الشاشة الرئيسية',
+    other:       'في متصفحك: ابحث عن « إضافة إلى الشاشة الرئيسية ».',
   },
 }
 
@@ -130,24 +142,11 @@ const CSS = `
   /* Tab bar scroll-aware */
   .c-tabbar { transition: transform .32s cubic-bezier(.4,0,.2,1); }
 
-  /* Install banner */
-  .install-wrap {
-    position: fixed;
-    left: 0; right: 0;
-    z-index: 200;
-    padding: 0 12px 6px;
-    pointer-events: none;
-    transition: bottom .32s cubic-bezier(.4,0,.2,1);
-  }
-  .install-wrap > * { pointer-events: auto; }
-  @media (min-width: 1024px) {
-    .install-wrap { max-width: 420px; left: 270px; right: auto; }
-  }
-  @keyframes slideUp {
-    from { opacity: 0; transform: translateY(16px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  .install-anim { animation: slideUp .3s cubic-bezier(.34,1.2,.64,1) both; }
+  /* Install sheet */
+  @keyframes overlayIn  { from { opacity:0 } to { opacity:1 } }
+  @keyframes sheetIn    { from { transform:translateY(100%) } to { transform:translateY(0) } }
+  .sheet-overlay { animation: overlayIn .25s ease both; }
+  .sheet-panel   { animation: sheetIn   .35s cubic-bezier(.32,1,.5,1) both; }
 `
 
 // ─── SVG Icons ────────────────────────────────────────────────────────────────
@@ -340,10 +339,10 @@ function WelcomeScreen({ onScan, onPhoneLogin, t, isRtl, onLangToggle }: {
 
 // ─── Home screen ──────────────────────────────────────────────────────────────
 
-function HomeScreen({ clients, name, onOpen, onScan, t, isRtl, onLangToggle }: {
+function HomeScreen({ clients, name, onOpen, onScan, t, isRtl, onLangToggle, onInstall }: {
   clients: Client[]; name: string
   onOpen: (id: string) => void; onScan: () => void
-  t: Tr; isRtl: boolean; onLangToggle: () => void
+  t: Tr; isRtl: boolean; onLangToggle: () => void; onInstall: () => void
 }) {
   const total = clients.reduce((s, c) => s + (c.points_balance || 0), 0)
 
@@ -357,6 +356,11 @@ function HomeScreen({ clients, name, onOpen, onScan, t, isRtl, onLangToggle }: {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <LangToggle t={t} onToggle={onLangToggle} />
+          <button onClick={onInstall} title="Installer l'app" style={{ width: 40, height: 40, borderRadius: '50%', background: '#EDE6FB', color: '#5B21B6', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+          </button>
           <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'linear-gradient(135deg,#5B21B6,#3F1685)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 15, flexShrink: 0, boxShadow: '0 8px 20px rgba(91,33,182,0.2)' }}>
             {initials(name)}
           </div>
@@ -738,38 +742,88 @@ function DetailScreen({ client, clientName, onBack, t, isRtl }: {
   )
 }
 
-// ─── Install Banner ───────────────────────────────────────────────────────────
+// ─── Install Sheet ────────────────────────────────────────────────────────────
 
-function InstallBanner({ lang, isIOS, hasPrompt, onInstall, onDismiss, isRtl }: {
-  lang: Lang; isIOS: boolean; hasPrompt: boolean
-  onInstall: () => void; onDismiss: () => void; isRtl: boolean
+type Platform = 'ios' | 'android' | 'other'
+
+function InstallSheet({ lang, platform, hasPrompt, onInstall, onClose, isRtl }: {
+  lang: Lang; platform: Platform; hasPrompt: boolean
+  onInstall: () => void; onClose: () => void; isRtl: boolean
 }) {
   const i = INSTALL[lang]
+
+  const Step = ({ n, text, sub }: { n: string; text: string; sub?: string }) => (
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, padding: '12px 0', borderBottom: '1px solid rgba(21,16,31,.06)' }}>
+      <div style={{ width: 28, height: 28, borderRadius: 99, background: '#EDE6FB', color: '#5B21B6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, flexShrink: 0 }}>{n}</div>
+      <div>
+        <p style={{ fontSize: 14, fontWeight: 600, color: '#15101F' }}>{text}</p>
+        {sub && <p style={{ fontSize: 13, color: '#5B21B6', marginTop: 3, fontWeight: 500 }}>{sub}</p>}
+      </div>
+    </div>
+  )
+
   return (
-    <div dir={isRtl ? 'rtl' : 'ltr'} className="install-anim" style={{ background: '#fff', border: '1px solid #C4B5FD', borderRadius: 20, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12, boxShadow: '0 8px 32px rgba(91,33,182,.18)' }}>
-      <div style={{ width: 44, height: 44, borderRadius: 14, background: '#5B21B6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-        <svg viewBox="0 0 100 100" width="22" height="22" aria-hidden>
-          <circle cx="50" cy="50" r="42" fill="none" stroke="white" strokeWidth="8" />
-          <circle cx="50" cy="50" r="14" fill="white" />
-        </svg>
+    <div dir={isRtl ? 'rtl' : 'ltr'} style={{ position: 'fixed', inset: 0, zIndex: 500 }}>
+      {/* Overlay */}
+      <div className="sheet-overlay" onClick={onClose}
+        style={{ position: 'absolute', inset: 0, background: 'rgba(21,16,31,.55)', backdropFilter: 'blur(4px)' }} />
+
+      {/* Sheet */}
+      <div className="sheet-panel" style={{
+        position: 'absolute', bottom: 0, left: 0, right: 0,
+        background: '#fff', borderRadius: '24px 24px 0 0',
+        padding: '12px 24px 40px', maxHeight: '90dvh', overflowY: 'auto',
+        boxShadow: '0 -8px 40px rgba(21,16,31,.15)',
+      }}>
+        {/* Handle */}
+        <div style={{ width: 36, height: 4, borderRadius: 99, background: 'rgba(21,16,31,.12)', margin: '0 auto 24px' }} />
+
+        {/* Icon + title */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 8 }}>
+          <div style={{ width: 56, height: 56, borderRadius: 16, background: '#5B21B6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <svg viewBox="0 0 100 100" width="28" height="28" aria-hidden>
+              <circle cx="50" cy="50" r="42" fill="none" stroke="white" strokeWidth="8" />
+              <circle cx="50" cy="50" r="14" fill="white" />
+            </svg>
+          </div>
+          <div>
+            <p style={{ fontSize: 20, fontWeight: 800, color: '#15101F' }}>{i.title}</p>
+            <p style={{ fontSize: 13, color: '#6B7280', marginTop: 3 }}>{i.subtitle}</p>
+          </div>
+        </div>
+
+        {/* Steps */}
+        <div style={{ margin: '20px 0' }}>
+          {platform === 'ios' ? (
+            <>
+              <Step n="1" text={i.ios_1} sub={i.ios_1b} />
+              <Step n="2" text={i.ios_2} sub={i.ios_2b} />
+            </>
+          ) : platform === 'android' ? (
+            hasPrompt ? (
+              <Step n="1" text={i.and_prompt} />
+            ) : (
+              <Step n="1" text={i.and_manual} />
+            )
+          ) : (
+            <Step n="1" text={i.other} />
+          )}
+        </div>
+
+        {/* Action */}
+        {platform === 'android' && hasPrompt ? (
+          <button onClick={onInstall} style={{ width: '100%', background: '#5B21B6', color: '#fff', border: 'none', borderRadius: 16, padding: '16px', fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 12 }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            {i.install_btn}
+          </button>
+        ) : null}
+
+        <button onClick={onClose} style={{ width: '100%', background: 'transparent', color: '#9CA3AF', border: '1.5px solid rgba(21,16,31,.1)', borderRadius: 16, padding: '14px', fontSize: 15, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+          {i.close}
+        </button>
       </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ fontSize: 13, fontWeight: 700, color: '#15101F' }}>{i.title}</p>
-        <p style={{ fontSize: 12, color: '#6D28D9', marginTop: 1 }}>{i.desc}</p>
-        {!hasPrompt && isIOS && (
-          <p style={{ fontSize: 11, color: '#9CA3AF', marginTop: 3 }}>{i.ios}</p>
-        )}
-      </div>
-      <button
-        onClick={onInstall}
-        style={{ background: '#5B21B6', color: '#fff', border: 'none', borderRadius: 12, padding: '10px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 6 }}
-      >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-        </svg>
-        {i.btn}
-      </button>
-      <button onClick={onDismiss} style={{ fontSize: 20, color: '#C4B5FD', lineHeight: 1, flexShrink: 0, padding: '0 2px' }}>×</button>
     </div>
   )
 }
@@ -810,8 +864,8 @@ export default function ClientApp() {
   const [hasPhone, setHasPhone] = useState(false)
   const [lang,          setLang]          = useState<Lang>('fr')
   const [installPrompt, setInstallPrompt] = useState<any>(null)
-  const [isIOS,         setIsIOS]         = useState(false)
-  const [showBanner,    setShowBanner]    = useState(false)
+  const [platform,      setPlatform]      = useState<Platform>('other')
+  const [showSheet,     setShowSheet]     = useState(false)
   const [tabHidden,     setTabHidden]     = useState(false)
   const lastScrollY = useRef(0)
 
@@ -860,19 +914,21 @@ export default function ClientApp() {
       navigator.serviceWorker.register('/sw.js').catch(() => {})
     }
 
+    // Detect platform
+    const ua = navigator.userAgent
+    if (/iPad|iPhone|iPod/.test(ua))          setPlatform('ios')
+    else if (/Android/.test(ua))              setPlatform('android')
+
+    // Don't show if already installed
     if (window.matchMedia('(display-mode: standalone)').matches) return
-    if (localStorage.getItem('fidele_install_dismissed')) return
 
-    setIsIOS(/iPad|iPhone|iPod/.test(navigator.userAgent))
-    setShowBanner(true)
-
+    // Capture native install prompt when available (Android Chrome)
     const promptHandler = (e: Event) => {
       e.preventDefault()
       setInstallPrompt(e)
     }
     const installedHandler = () => {
-      setShowBanner(false)
-      localStorage.setItem('fidele_install_dismissed', '1')
+      setShowSheet(false)
     }
     window.addEventListener('beforeinstallprompt', promptHandler)
     window.addEventListener('appinstalled', installedHandler)
@@ -906,16 +962,9 @@ export default function ClientApp() {
       installPrompt.prompt()
       installPrompt.userChoice.then(() => {
         setInstallPrompt(null)
-        setShowBanner(false)
-        localStorage.setItem('fidele_install_dismissed', '1')
+        setShowSheet(false)
       })
     }
-    // iOS and others: the banner already shows the share instructions inline
-  }
-
-  function dismissBanner() {
-    localStorage.setItem('fidele_install_dismissed', '1')
-    setShowBanner(false)
   }
 
   if (loading) return <><style>{CSS}</style><Spinner /></>
@@ -950,7 +999,7 @@ export default function ClientApp() {
         <div className="c-main">
           <div className="c-scroll" onScroll={handleScroll}>
             {isHome
-              ? <HomeScreen clients={clients} name={clientName} onOpen={id => setScreen(id)} onScan={() => setShowScanner(true)} t={t} isRtl={isRtl} onLangToggle={toggleLang} />
+              ? <HomeScreen clients={clients} name={clientName} onOpen={id => setScreen(id)} onScan={() => setShowScanner(true)} t={t} isRtl={isRtl} onLangToggle={toggleLang} onInstall={() => setShowSheet(true)} />
               : activeClient
                 ? <DetailScreen client={activeClient} clientName={clientName} onBack={() => setScreen('home')} t={t} isRtl={isRtl} />
                 : null}
@@ -959,13 +1008,11 @@ export default function ClientApp() {
         </div>
       </div>
 
-      {showBanner && (
-        <div className="install-wrap" style={{ bottom: tabHidden ? 'calc(8px + env(safe-area-inset-bottom, 0px))' : 'calc(62px + env(safe-area-inset-bottom, 0px))' }}>
-          <InstallBanner
-            lang={lang} isIOS={isIOS} hasPrompt={!!installPrompt}
-            onInstall={handleInstall} onDismiss={dismissBanner} isRtl={isRtl}
-          />
-        </div>
+      {showSheet && (
+        <InstallSheet
+          lang={lang} platform={platform} hasPrompt={!!installPrompt}
+          onInstall={handleInstall} onClose={() => setShowSheet(false)} isRtl={isRtl}
+        />
       )}
 
       {showScanner && (
