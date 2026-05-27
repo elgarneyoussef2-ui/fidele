@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { verifyPassword, hashPassword } from '@/lib/password'
+import { rateLimit } from '@/lib/ratelimit'
 
 function adminSupabase() {
   return createClient(
@@ -14,6 +15,9 @@ function adminSupabase() {
 
 // POST /api/client/login  { phone, password }
 export async function POST(req: NextRequest) {
+  const limited = await rateLimit(req)
+  if (limited) return limited
+
   const { phone, password } = await req.json().catch(() => ({}))
   if (!phone || !password)
     return NextResponse.json({ error: 'Champs manquants' }, { status: 400 })

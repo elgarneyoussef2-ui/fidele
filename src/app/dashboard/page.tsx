@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
+import { verifyRestaurantSession, RESTAURANT_COOKIE } from '@/lib/session'
 import { Users, Utensils, CreditCard, TrendingUp } from 'lucide-react'
 import VisitsChart from '@/components/dashboard/VisitsChart'
 import AppShell from '@/components/dashboard/AppShell'
@@ -11,7 +12,8 @@ function fmt(n: number) {
 }
 
 export default async function DashboardPage() {
-  const restaurantId = cookies().get('fidele_restaurant_session')?.value
+  const token = cookies().get(RESTAURANT_COOKIE)?.value
+  const restaurantId = token ? await verifyRestaurantSession(token) : null
   if (!restaurantId) redirect('/')
 
   const admin = await createAdminClient()

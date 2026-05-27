@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server'
+import { rateLimit } from '@/lib/ratelimit'
 
 const ADMIN_USER = 'admin'
 const COOKIE_NAME = 'taghra_admin'
@@ -11,6 +12,9 @@ const COOKIE_OPTS = {
 }
 
 export async function POST(req: NextRequest) {
+  const limited = await rateLimit(req)
+  if (limited) return limited
+
   const { username, password } = await req.json()
 
   const ADMIN_PASS = process.env.ADMIN_PASSWORD

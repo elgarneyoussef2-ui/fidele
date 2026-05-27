@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { createAdminClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { getRestaurantId } from '@/lib/session'
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
@@ -21,7 +22,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const restaurantId = req.cookies.get('fidele_restaurant_session')?.value
+  const restaurantId = await getRestaurantId(req)
   if (!restaurantId) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
 
   const body = await req.json()

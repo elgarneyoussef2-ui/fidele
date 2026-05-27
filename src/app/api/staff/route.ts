@@ -3,9 +3,10 @@ export const dynamic = 'force-dynamic'
 import { createAdminClient } from '@/lib/supabase/server'
 import { NextResponse, type NextRequest } from 'next/server'
 import { hashPassword } from '@/lib/password'
+import { getRestaurantId } from '@/lib/session'
 
 export async function GET(req: NextRequest) {
-  const restaurantId = req.cookies.get('fidele_restaurant_session')?.value
+  const restaurantId = await getRestaurantId(req)
   if (!restaurantId) return NextResponse.json([], { status: 401 })
 
   const admin = await createAdminClient()
@@ -18,7 +19,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const restaurantId = req.cookies.get('fidele_restaurant_session')?.value
+  const restaurantId = await getRestaurantId(req)
   if (!restaurantId) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
 
   const { name, password, role } = await req.json().catch(() => ({}))

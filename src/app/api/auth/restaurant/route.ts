@@ -1,15 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
-
-const RESTAURANT_COOKIE = 'fidele_restaurant_session'
-
-const COOKIE_OPTS = {
-  httpOnly: true,
-  path: '/',
-  sameSite: 'lax' as const,
-  secure: process.env.NODE_ENV === 'production',
-  maxAge: 60 * 60 * 8, // 8h
-}
+import { signRestaurantSession, RESTAURANT_COOKIE, COOKIE_OPTS } from '@/lib/session'
+import { rateLimit } from '@/lib/ratelimit'
 
 function anonClient() {
   return createClient(
@@ -28,18 +20,19 @@ function adminClient() {
 }
 
 export async function POST(req: NextRequest) {
+  const limited = await rateLimit(req)
+  if (limited) return limited
+
   const { email, password } = await req.json()
   if (!email || !password) {
     return NextResponse.json({ error: 'Email et mot de passe requis.' }, { status: 400 })
   }
 
-  // Verify credentials
   const { data: authData, error } = await anonClient().auth.signInWithPassword({ email, password })
   if (error || !authData.user) {
     return NextResponse.json({ error: 'Identifiants incorrects.' }, { status: 401 })
   }
 
-  // Find linked restaurant
   const { data: restaurant } = await adminClient()
     .from('restaurants')
     .select('id')
@@ -50,8 +43,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Aucun restaurant associé à ce compte.' }, { status: 404 })
   }
 
+  const jwt = await signRestaurantSession(restaurant.id)
   const response = NextResponse.json({ ok: true })
-  response.cookies.set(RESTAURANT_COOKIE, restaurant.id, COOKIE_OPTS)
+  response.cookies.set(RESTAURANT_COOKIE, jwt, COOKIE_OPTS)
   return response
 }
 

@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
+import { verifyRestaurantSession, RESTAURANT_COOKIE } from '@/lib/session'
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Admin routes — protected by taghra_admin cookie
@@ -11,10 +12,18 @@ export function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Dashboard routes — protected by restaurant session cookie
+  // Dashboard routes — verify signed JWT session
   if (pathname.startsWith('/dashboard')) {
-    if (!request.cookies.get('fidele_restaurant_session')?.value)
-      return NextResponse.redirect(new URL('/', request.url))
+    const token = request.cookies.get(RESTAURANT_COOKIE)?.value
+    if (!token) return NextResponse.redirect(new URL('/', request.url))
+
+    const restaurantId = await verifyRestaurantSession(token)
+    if (!restaurantId) {
+      // Token invalid or expired — clear cookie and redirect
+      const res = NextResponse.redirect(new URL('/', request.url))
+      res.cookies.set(RESTAURANT_COOKIE, '', { path: '/', maxAge: 0 })
+      return res
+    }
     return NextResponse.next()
   }
 

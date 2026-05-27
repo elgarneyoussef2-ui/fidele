@@ -2,9 +2,10 @@ export const dynamic = 'force-dynamic'
 
 import { createAdminClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { getRestaurantId } from '@/lib/session'
 
 export async function GET(req: NextRequest) {
-  const restaurantId = req.cookies.get('fidele_restaurant_session')?.value
+  const restaurantId = await getRestaurantId(req)
   if (!restaurantId) return NextResponse.json([], { status: 401 })
 
   const admin = await createAdminClient()
