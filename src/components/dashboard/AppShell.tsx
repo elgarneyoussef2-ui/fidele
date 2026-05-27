@@ -3,16 +3,15 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { LayoutDashboard, Gift, Settings, Users, Database } from 'lucide-react'
+import { LayoutDashboard, Gift, Settings, Users } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Logomark } from '@/components/brand/Logomark'
 
 const NAV = [
-  { href: '/dashboard',          label: 'Dashboard',    icon: LayoutDashboard },
-  { href: '/rewards',            label: 'Récompenses',  icon: Gift },
-  { href: '/dashboard/staff',    label: 'Équipe',       icon: Users },
-  { href: '/dashboard/database', label: 'Base de données', icon: Database },
-  { href: '/settings',           label: 'Paramètres',   icon: Settings },
+  { href: '/dashboard',       label: 'Dashboard',   icon: LayoutDashboard },
+  { href: '/rewards',         label: 'Récompenses', icon: Gift },
+  { href: '/dashboard/staff', label: 'Équipe',      icon: Users },
+  { href: '/settings',        label: 'Paramètres',  icon: Settings },
 ]
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
