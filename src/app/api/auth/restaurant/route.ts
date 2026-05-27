@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 
-export const RESTAURANT_COOKIE = 'fidele_restaurant_session'
+const RESTAURANT_COOKIE = 'fidele_restaurant_session'
 
 const COOKIE_OPTS = {
   httpOnly: true,
