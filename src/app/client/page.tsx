@@ -865,7 +865,7 @@ export default function ClientApp() {
   const [lang,          setLang]          = useState<Lang>('fr')
   const [installPrompt, setInstallPrompt] = useState<any>(null)
   const [platform,      setPlatform]      = useState<Platform>('other')
-  const [showSheet,     setShowSheet]     = useState(false)
+  const [showIOSHint,   setShowIOSHint]   = useState(false)
   const [tabHidden,     setTabHidden]     = useState(false)
   const lastScrollY = useRef(0)
 
@@ -928,7 +928,7 @@ export default function ClientApp() {
       setInstallPrompt(e)
     }
     const installedHandler = () => {
-      setShowSheet(false)
+      setInstallPrompt(null)
     }
     window.addEventListener('beforeinstallprompt', promptHandler)
     window.addEventListener('appinstalled', installedHandler)
@@ -959,11 +959,13 @@ export default function ClientApp() {
 
   function handleInstall() {
     if (installPrompt) {
+      // Android/Chrome — native install dialog, fully automatic
       installPrompt.prompt()
-      installPrompt.userChoice.then(() => {
-        setInstallPrompt(null)
-        setShowSheet(false)
-      })
+      installPrompt.userChoice.then(() => setInstallPrompt(null))
+    } else if (platform === 'ios') {
+      // iOS — Apple ne permet pas l'install automatique, on affiche un toast minimal
+      setShowIOSHint(true)
+      setTimeout(() => setShowIOSHint(false), 5000)
     }
   }
 
@@ -999,7 +1001,7 @@ export default function ClientApp() {
         <div className="c-main">
           <div className="c-scroll" onScroll={handleScroll}>
             {isHome
-              ? <HomeScreen clients={clients} name={clientName} onOpen={id => setScreen(id)} onScan={() => setShowScanner(true)} t={t} isRtl={isRtl} onLangToggle={toggleLang} onInstall={() => setShowSheet(true)} />
+              ? <HomeScreen clients={clients} name={clientName} onOpen={id => setScreen(id)} onScan={() => setShowScanner(true)} t={t} isRtl={isRtl} onLangToggle={toggleLang} onInstall={handleInstall} />
               : activeClient
                 ? <DetailScreen client={activeClient} clientName={clientName} onBack={() => setScreen('home')} t={t} isRtl={isRtl} />
                 : null}
@@ -1008,11 +1010,12 @@ export default function ClientApp() {
         </div>
       </div>
 
-      {showSheet && (
-        <InstallSheet
-          lang={lang} platform={platform} hasPrompt={!!installPrompt}
-          onInstall={handleInstall} onClose={() => setShowSheet(false)} isRtl={isRtl}
-        />
+      {/* iOS toast — seule solution possible sur iOS (limitation Apple) */}
+      {showIOSHint && (
+        <div dir={isRtl ? 'rtl' : 'ltr'} style={{ position: 'fixed', bottom: 'calc(72px + env(safe-area-inset-bottom,0px))', left: '50%', transform: 'translateX(-50%)', background: '#15101F', color: '#fff', borderRadius: 16, padding: '14px 20px', fontSize: 14, fontWeight: 600, zIndex: 400, whiteSpace: 'nowrap', boxShadow: '0 8px 32px rgba(0,0,0,.35)', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+          {lang === 'ar' ? 'اضغط ⬆ ثم « إضافة إلى الشاشة الرئيسية »' : 'Appuyez sur ⬆ → « Sur l\'écran d\'accueil »'}
+        </div>
       )}
 
       {showScanner && (
