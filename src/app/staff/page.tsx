@@ -9,7 +9,7 @@ type Demand = { id: string; client_name: string; reward_name: string; reward_poi
 
 const CSS = `
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { height: 100%; background: #F6F1E7; -webkit-font-smoothing: antialiased; }
+  html, body { height: 100%; background: #fff; -webkit-font-smoothing: antialiased; }
   body { font-family: var(--font-sans), system-ui, sans-serif; color: #15101F; }
   button { font-family: inherit; cursor: pointer; border: none; background: none; -webkit-tap-highlight-color: transparent; }
   button:active { opacity: .8; }
@@ -276,7 +276,7 @@ export default function StaffPage() {
   return (
     <>
       <style>{CSS}</style>
-      <div style={{ minHeight: '100dvh', background: '#F6F1E7', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ minHeight: '100dvh', background: '#fff', display: 'flex', flexDirection: 'column' }}>
 
         {/* Header */}
         <div style={{ background: '#15101F', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
