@@ -85,12 +85,19 @@ function LoginScreen({ onLogin }: { onLogin: (s: Staff) => void }) {
 // ── QR Tab ───────────────────────────────────────────────────────────────────
 
 function QRTab() {
-  const [amount,    setAmount]    = useState('')
-  const [qrDataUrl, setQrDataUrl] = useState('')
-  const [loading,   setLoading]   = useState(false)
+  const [amount,      setAmount]      = useState('')
+  const [qrDataUrl,   setQrDataUrl]   = useState('')
+  const [loading,     setLoading]     = useState(false)
+  const [madPerPoint, setMadPerPoint] = useState(10)
+
+  useEffect(() => {
+    fetch('/api/restaurant').then(r => r.ok ? r.json() : null).then(d => {
+      if (d?.mad_per_point) setMadPerPoint(Number(d.mad_per_point))
+    })
+  }, [])
 
   const amountNum = Number(amount)
-  const pts       = amountNum > 0 ? Math.floor(amountNum / 10) : 0
+  const pts       = amountNum > 0 ? Math.floor(amountNum / madPerPoint) : 0
 
   async function generate() {
     if (amountNum <= 0) return
@@ -127,8 +134,11 @@ function QRTab() {
           </button>
           {amountNum > 0 && (
             <div style={{ marginTop: 14, background: '#EDE6FB', borderRadius: 12, padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: 13, color: '#5B21B6', fontWeight: 500 }}>Points à créditer</span>
-              <span style={{ fontSize: 20, fontWeight: 800, color: '#5B21B6', fontFamily: 'var(--font-mono), monospace' }}>{pts} pts</span>
+              <div>
+                <span style={{ fontSize: 13, color: '#5B21B6', fontWeight: 500 }}>Points à créditer</span>
+                <p style={{ fontSize: 11, color: '#7C3AED', opacity: 0.6, marginTop: 2 }}>1 pt = {madPerPoint} MAD</p>
+              </div>
+              <span style={{ fontSize: 24, fontWeight: 800, color: '#5B21B6', fontFamily: 'var(--font-mono), monospace' }}>{pts} pts</span>
             </div>
           )}
         </div>

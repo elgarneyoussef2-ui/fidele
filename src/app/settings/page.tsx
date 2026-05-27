@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import AppShell from '@/components/dashboard/AppShell'
-import { CheckCircle2, Loader2, Store, Image as ImageIcon, FileText, Phone, Palette, Clock } from 'lucide-react'
+import { CheckCircle2, Loader2, Store, Image as ImageIcon, FileText, Phone, Palette, Clock, Coins } from 'lucide-react'
 
 type RestaurantData = {
   id: string
@@ -13,6 +13,7 @@ type RestaurantData = {
   accent_color: string | null
   phone: string | null
   points_expiry_months: number | null
+  mad_per_point: number | null
 }
 
 const COLORS = ['#5B21B6', '#0369A1', '#065F46', '#B45309', '#BE185D', '#DC2626', '#374151']
@@ -27,6 +28,7 @@ export default function SettingsPage() {
   const [phone,        setPhone]        = useState('')
   const [expiryEnabled, setExpiryEnabled] = useState(true)
   const [expiryMonths,  setExpiryMonths]  = useState(12)
+  const [madPerPoint,   setMadPerPoint]   = useState(10)
   const [saving,       setSaving]       = useState(false)
   const [saved,        setSaved]        = useState(false)
   const [error,        setError]        = useState('')
@@ -45,6 +47,7 @@ export default function SettingsPage() {
         setPhone(d.phone ?? '')
         setExpiryEnabled(d.points_expiry_months !== null)
         setExpiryMonths(d.points_expiry_months ?? 12)
+        setMadPerPoint(d.mad_per_point ?? 10)
       })
   }, [])
 
@@ -54,7 +57,7 @@ export default function SettingsPage() {
     const res = await fetch('/api/restaurant', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, description: desc, logo_url: logo || null, cover_url: cover || null, accent_color: color, phone, points_expiry_months: expiryEnabled ? expiryMonths : null }),
+      body: JSON.stringify({ name, description: desc, logo_url: logo || null, cover_url: cover || null, accent_color: color, phone, points_expiry_months: expiryEnabled ? expiryMonths : null, mad_per_point: madPerPoint }),
     })
     setSaving(false)
     if (!res.ok) { const d = await res.json(); setError(d.error ?? 'Erreur'); return }
@@ -187,6 +190,28 @@ export default function SettingsPage() {
               ))}
               <input type="color" value={color} onChange={e => setColor(e.target.value)}
                 style={{ width: 32, height: 32, borderRadius: '50%', border: '1.5px solid rgba(21,16,31,.12)', padding: 2, cursor: 'pointer', background: 'none' }} />
+            </div>
+          </div>
+
+          {/* Règle de points */}
+          <div style={{ background: '#F5F3FF', border: '1px solid #DDD6FE', borderRadius: 16, padding: '20px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#5B21B6', marginBottom: 16 }}>
+              <Coins size={13} /> Règle de points
+            </label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 15, fontWeight: 600, color: '#15101F' }}>1 point</span>
+              <span style={{ fontSize: 14, color: '#6B7280' }}>=</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <input
+                  type="number" min={1} max={500} value={madPerPoint}
+                  onChange={e => setMadPerPoint(Math.max(1, Number(e.target.value)))}
+                  style={{ width: 90, border: '1.5px solid #C4B5FD', borderRadius: 10, padding: '10px 12px', fontSize: 18, fontWeight: 700, fontFamily: 'var(--font-mono), monospace', outline: 'none', background: '#fff', color: '#5B21B6', textAlign: 'center' }}
+                />
+                <span style={{ fontSize: 15, fontWeight: 600, color: '#15101F' }}>MAD</span>
+              </div>
+            </div>
+            <div style={{ marginTop: 14, background: '#EDE6FB', borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#5B21B6', fontWeight: 500 }}>
+              Exemple : une commande de <strong>{madPerPoint * 10} MAD</strong> = <strong>10 pts</strong>
             </div>
           </div>
 

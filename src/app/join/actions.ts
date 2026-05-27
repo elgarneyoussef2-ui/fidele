@@ -28,10 +28,11 @@ export async function processJoinWithToken(input: { token: string; phone: string
   const amount       = Number(qrToken.amount)
 
   try {
-    // Get expiry policy from restaurant
+    // Get restaurant config (expiry + points ratio)
     const { data: resto } = await (admin.from('restaurants') as any)
-      .select('points_expiry_months').eq('id', restaurantId).single()
+      .select('points_expiry_months, mad_per_point').eq('id', restaurantId).single()
     const expiryMonths: number | null = resto?.points_expiry_months ?? null
+    const madPerPoint: number         = Math.max(1, Number(resto?.mad_per_point ?? 10))
 
     const { data: existing } = await (admin.from('clients') as any)
       .select('*').eq('phone', phone).eq('restaurant_id', restaurantId).maybeSingle()
@@ -45,7 +46,7 @@ export async function processJoinWithToken(input: { token: string; phone: string
       currentClient = newClient
     }
 
-    const pointsToEarn   = Math.max(0, Math.floor(amount / 10))
+    const pointsToEarn   = Math.max(0, Math.floor(amount / madPerPoint))
     const oldBalance     = Number(currentClient.points_balance) || 0
     const updatedBalance = oldBalance + pointsToEarn
 

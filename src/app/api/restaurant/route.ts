@@ -6,7 +6,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 export async function GET() {
   const admin = await createAdminClient()
   const { data } = await (admin.from('restaurants') as any)
-    .select('id, name, description, logo_url, cover_url, accent_color, phone')
+    .select('id, name, description, logo_url, cover_url, accent_color, phone, points_expiry_months, mad_per_point')
     .order('created_at', { ascending: true })
     .limit(1)
     .single()
@@ -17,7 +17,7 @@ export async function GET() {
 
 export async function PATCH(req: NextRequest) {
   const body = await req.json().catch(() => ({}))
-  const { name, description, logo_url, cover_url, accent_color, phone, points_expiry_months } = body
+  const { name, description, logo_url, cover_url, accent_color, phone, points_expiry_months, mad_per_point } = body
 
   const admin = await createAdminClient()
   const { data: restaurant } = await (admin.from('restaurants') as any)
@@ -36,6 +36,7 @@ export async function PATCH(req: NextRequest) {
   if (accent_color         !== undefined) updates.accent_color         = accent_color
   if (phone                !== undefined) updates.phone                = phone
   if (points_expiry_months !== undefined) updates.points_expiry_months = points_expiry_months
+  if (mad_per_point        !== undefined) updates.mad_per_point        = Math.max(1, Number(mad_per_point))
 
   const { error } = await (admin.from('restaurants') as any)
     .update(updates)
