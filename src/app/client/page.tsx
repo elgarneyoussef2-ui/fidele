@@ -339,10 +339,11 @@ function WelcomeScreen({ onScan, onPhoneLogin, t, isRtl, onLangToggle }: {
 
 // ─── Home screen ──────────────────────────────────────────────────────────────
 
-function HomeScreen({ clients, name, onOpen, onScan, t, isRtl, onLangToggle, onInstall }: {
+function HomeScreen({ clients, name, onOpen, onScan, t, isRtl, onLangToggle, onInstall, showInstall }: {
   clients: Client[]; name: string
   onOpen: (id: string) => void; onScan: () => void
   t: Tr; isRtl: boolean; onLangToggle: () => void; onInstall: () => void
+  showInstall: boolean
 }) {
   const total = clients.reduce((s, c) => s + (c.points_balance || 0), 0)
 
@@ -356,11 +357,6 @@ function HomeScreen({ clients, name, onOpen, onScan, t, isRtl, onLangToggle, onI
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <LangToggle t={t} onToggle={onLangToggle} />
-          <button onClick={onInstall} title="Installer l'app" style={{ width: 40, height: 40, borderRadius: '50%', background: '#EDE6FB', color: '#5B21B6', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-          </button>
           <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'linear-gradient(135deg,#5B21B6,#3F1685)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 15, flexShrink: 0, boxShadow: '0 8px 20px rgba(91,33,182,0.2)' }}>
             {initials(name)}
           </div>
@@ -401,6 +397,32 @@ function HomeScreen({ clients, name, onOpen, onScan, t, isRtl, onLangToggle, onI
           </div>
         </div>
       </div>
+
+      {/* Install banner */}
+      {showInstall && (
+        <div style={{ margin: '20px 20px 0', background: 'linear-gradient(135deg,#2D1B69 0%,#5B21B6 100%)', borderRadius: 22, padding: '18px 20px', display: 'flex', alignItems: 'center', gap: 14, boxShadow: '0 8px 24px rgba(91,33,182,.3)' }}>
+          <div style={{ width: 44, height: 44, borderRadius: 14, background: 'rgba(255,255,255,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <svg viewBox="0 0 100 100" width="22" height="22" aria-hidden>
+              <circle cx="50" cy="50" r="42" fill="none" stroke="white" strokeWidth="8"/>
+              <circle cx="50" cy="50" r="14" fill="white"/>
+            </svg>
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 2 }}>
+              {isRtl ? 'ثبّت تطبيق Fidèle' : 'Installer Fidèle'}
+            </p>
+            <p style={{ fontSize: 12, color: 'rgba(255,255,255,.6)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {isRtl ? 'وصول سريع من شاشتك الرئيسية' : "Accès rapide depuis votre écran d'accueil"}
+            </p>
+          </div>
+          <button
+            onClick={onInstall}
+            style={{ background: '#fff', color: '#5B21B6', border: 'none', borderRadius: 12, padding: '10px 16px', fontSize: 13, fontWeight: 800, cursor: 'pointer', flexShrink: 0, fontFamily: 'inherit' }}
+          >
+            {isRtl ? 'تثبيت' : 'Installer'}
+          </button>
+        </div>
+      )}
 
       {/* Restaurant list */}
       <div style={{ padding: '32px 24px 0' }}>
@@ -862,11 +884,13 @@ export default function ClientApp() {
   const [showScanner, setShowScanner] = useState(false)
   const [loading, setLoading] = useState(true)
   const [hasPhone, setHasPhone] = useState(false)
-  const [lang,          setLang]          = useState<Lang>('fr')
-  const [installPrompt, setInstallPrompt] = useState<any>(null)
-  const [platform,      setPlatform]      = useState<Platform>('other')
-  const [showIOSHint,   setShowIOSHint]   = useState(false)
-  const [tabHidden,     setTabHidden]     = useState(false)
+  const [lang,             setLang]             = useState<Lang>('fr')
+  const [installPrompt,    setInstallPrompt]    = useState<any>(null)
+  const [platform,         setPlatform]         = useState<Platform>('other')
+
+  const [tabHidden,        setTabHidden]         = useState(false)
+  const [standalone,       setStandalone]        = useState(true)
+  const [showInstallSheet, setShowInstallSheet]  = useState(false)
   const lastScrollY = useRef(0)
 
   const t      = T[lang]
@@ -919,8 +943,10 @@ export default function ClientApp() {
     if (/iPad|iPhone|iPod/.test(ua))          setPlatform('ios')
     else if (/Android/.test(ua))              setPlatform('android')
 
-    // Don't show if already installed
-    if (window.matchMedia('(display-mode: standalone)').matches) return
+    // Track standalone state
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+    setStandalone(isStandalone)
+    if (isStandalone) return
 
     // Capture native install prompt when available (Android Chrome)
     const promptHandler = (e: Event) => {
@@ -959,15 +985,14 @@ export default function ClientApp() {
 
   function handleInstall() {
     if (installPrompt) {
-      // Android/Chrome — native install dialog, fully automatic
       installPrompt.prompt()
       installPrompt.userChoice.then(() => setInstallPrompt(null))
     } else if (platform === 'ios') {
-      // iOS — Apple ne permet pas l'install automatique, on affiche un toast minimal
-      setShowIOSHint(true)
-      setTimeout(() => setShowIOSHint(false), 5000)
+      setShowInstallSheet(true)
     }
   }
+
+  const showInstallBanner = !standalone && (!!installPrompt || platform === 'ios')
 
   if (loading) return <><style>{CSS}</style><Spinner /></>
 
@@ -1001,7 +1026,7 @@ export default function ClientApp() {
         <div className="c-main">
           <div className="c-scroll" onScroll={handleScroll}>
             {isHome
-              ? <HomeScreen clients={clients} name={clientName} onOpen={id => setScreen(id)} onScan={() => setShowScanner(true)} t={t} isRtl={isRtl} onLangToggle={toggleLang} onInstall={handleInstall} />
+              ? <HomeScreen clients={clients} name={clientName} onOpen={id => setScreen(id)} onScan={() => setShowScanner(true)} t={t} isRtl={isRtl} onLangToggle={toggleLang} onInstall={handleInstall} showInstall={showInstallBanner} />
               : activeClient
                 ? <DetailScreen client={activeClient} clientName={clientName} onBack={() => setScreen('home')} t={t} isRtl={isRtl} />
                 : null}
@@ -1010,12 +1035,11 @@ export default function ClientApp() {
         </div>
       </div>
 
-      {/* iOS toast — seule solution possible sur iOS (limitation Apple) */}
-      {showIOSHint && (
-        <div dir={isRtl ? 'rtl' : 'ltr'} style={{ position: 'fixed', bottom: 'calc(72px + env(safe-area-inset-bottom,0px))', left: '50%', transform: 'translateX(-50%)', background: '#15101F', color: '#fff', borderRadius: 16, padding: '14px 20px', fontSize: 14, fontWeight: 600, zIndex: 400, whiteSpace: 'nowrap', boxShadow: '0 8px 32px rgba(0,0,0,.35)', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-          {lang === 'ar' ? 'اضغط ⬆ ثم « إضافة إلى الشاشة الرئيسية »' : 'Appuyez sur ⬆ → « Sur l\'écran d\'accueil »'}
-        </div>
+      {showInstallSheet && (
+        <InstallSheet
+          lang={lang} platform={platform} hasPrompt={!!installPrompt}
+          onInstall={handleInstall} onClose={() => setShowInstallSheet(false)} isRtl={isRtl}
+        />
       )}
 
       {showScanner && (
