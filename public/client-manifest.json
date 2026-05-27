@@ -1,0 +1,27 @@
+{
+  "name": "Fidèle",
+  "short_name": "Fidèle",
+  "description": "Votre portefeuille de points fidélité.",
+  "start_url": "/client",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#5B21B6",
+  "theme_color": "#5B21B6",
+  "lang": "fr",
+  "categories": ["lifestyle", "shopping"],
+  "icons": [
+    {
+      "src": "/client-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/client-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

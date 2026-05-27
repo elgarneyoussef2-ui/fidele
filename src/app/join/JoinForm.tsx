@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import { CheckCircle2, Loader2, Star, Smartphone, User, ArrowRight, Lock } from 'lucide-react'
+import { CheckCircle2, Loader2, Star, Smartphone, User, ArrowRight, Lock, Download, Share } from 'lucide-react'
 import { processJoinWithToken } from './actions'
 import { T, type Lang } from '@/lib/i18n'
 
@@ -18,6 +18,11 @@ interface Props {
 
 const JT = {
   fr: {
+    install_title:   'Installer l\'app Fidèle',
+    install_desc:    'Accédez à vos points depuis l\'écran d\'accueil.',
+    install_btn:     'Ajouter à l\'écran d\'accueil',
+    install_ios:     'Appuyez sur',
+    install_ios2:    'puis « Sur l\'écran d\'accueil »',
     loyalty_points: 'Points Fidélité',
     receive_pts:    (pts: number, rName: string) => `Recevez ${pts} point${pts > 1 ? 's' : ''} chez ${rName}.`,
     enter_password: 'Entrez votre mot de passe pour valider.',
@@ -43,6 +48,11 @@ const JT = {
     lang_toggle:    'عربي',
   },
   ar: {
+    install_title:   'تثبيت تطبيق Fidèle',
+    install_desc:    'الوصول إلى نقاطك من الشاشة الرئيسية.',
+    install_btn:     'إضافة إلى الشاشة الرئيسية',
+    install_ios:     'اضغط على',
+    install_ios2:    'ثم « إضافة إلى الشاشة الرئيسية »',
     loyalty_points: 'نقاط الولاء',
     receive_pts:    (pts: number, rName: string) => `احصل على ${pts} نقطة في ${rName}.`,
     enter_password: 'أدخل كلمة مرورك للتأكيد.',
@@ -87,10 +97,20 @@ export default function JoinForm({ token, restaurantId, restaurantName, amount }
   const [clientName,   setClientName]   = useState('')
   const [countdown,    setCountdown]    = useState(4)
   const [isNewClient,  setIsNewClient]  = useState(false)
+  const [installPrompt, setInstallPrompt] = useState<any>(null)
+  const [isIOS,         setIsIOS]         = useState(false)
+  const [isStandalone,  setIsStandalone]  = useState(false)
 
   useEffect(() => {
     const saved = localStorage.getItem('fidele_lang') as Lang | null
     if (saved === 'fr' || saved === 'ar') setLang(saved)
+
+    setIsIOS(/iPad|iPhone|iPod/.test(navigator.userAgent))
+    setIsStandalone(window.matchMedia('(display-mode: standalone)').matches)
+
+    const handler = (e: Event) => { e.preventDefault(); setInstallPrompt(e) }
+    window.addEventListener('beforeinstallprompt', handler)
+    return () => window.removeEventListener('beforeinstallprompt', handler)
   }, [])
 
   function toggleLang() {
@@ -211,6 +231,30 @@ export default function JoinForm({ token, restaurantId, restaurantName, amount }
             <Button className="w-full h-14 text-lg font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl" onClick={() => window.location.replace('/client')}>
               {jt.see_wallet}
             </Button>
+
+            {/* Install prompt */}
+            {!isStandalone && (installPrompt || isIOS) && (
+              <div style={{ background: '#EDE6FB', border: '1px solid #C4B5FD', borderRadius: 20, padding: '16px 18px', textAlign: isRtl ? 'right' : 'left' }}>
+                <p style={{ fontSize: 13, fontWeight: 700, color: '#3B0764', marginBottom: 4 }}>{jt.install_title}</p>
+                <p style={{ fontSize: 12, color: '#6D28D9', marginBottom: 12 }}>{jt.install_desc}</p>
+                {installPrompt ? (
+                  <button
+                    type="button"
+                    onClick={() => { installPrompt.prompt(); installPrompt.userChoice.then(() => setInstallPrompt(null)) }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#5B21B6', color: '#fff', border: 'none', borderRadius: 12, padding: '10px 16px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
+                  >
+                    <Download size={15} />
+                    {jt.install_btn}
+                  </button>
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#5B21B6', fontWeight: 500 }}>
+                    <Share size={15} />
+                    <span>{jt.install_ios} <strong>⬆</strong> {jt.install_ios2}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
             <p className="text-xs text-muted-foreground num-mono tracking-widest">{jt.redirect(countdown)}</p>
           </CardFooter>
         </Card>
