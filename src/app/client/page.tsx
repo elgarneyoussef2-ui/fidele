@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
+import { T, type Lang, type Tr } from '@/lib/i18n'
 
 const ScannerScreen = lazy(() => import('./ScannerScreen'))
 
@@ -19,9 +20,9 @@ type Reward = { id: string; name: string; description: string; points_cost: numb
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const TIERS = [
-  { name: 'Bronze', min: 0, max: 500, color: '#B5781F', bg: '#F6F1E7' },
-  { name: 'Argent', min: 501, max: 1000, color: '#2A2236', bg: '#EDE6FB' },
-  { name: 'Or', min: 1001, max: null, color: '#5B21B6', bg: '#EDE6FB' },
+  { name: 'Bronze', min: 0,    max: 500,  color: '#B5781F', bg: '#F6F1E7' },
+  { name: 'Argent', min: 501,  max: 1000, color: '#2A2236', bg: '#EDE6FB' },
+  { name: 'Or',     min: 1001, max: null, color: '#5B21B6', bg: '#EDE6FB' },
 ]
 
 const tierFor = (p: number) =>
@@ -39,15 +40,18 @@ const tierProgress = (p: number) => {
   }
 }
 
-const ago = (iso: string) => {
+const tTier = (name: string, t: Tr) =>
+  name === 'Bronze' ? t.bronze : name === 'Argent' ? t.silver : t.gold
+
+const ago = (iso: string, t: Tr) => {
   const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000)
-  if (m < 1) return 'À l\'instant'
-  if (m < 60) return `Il y a ${m} min`
+  if (m < 1)  return t.just_now
+  if (m < 60) return t.n_min_ago(m)
   const h = Math.floor(m / 60)
-  if (h < 24) return `Il y a ${h}h`
+  if (h < 24) return t.n_h_ago(h)
   const d = Math.floor(h / 24)
-  if (d < 30) return `Il y a ${d}j`
-  return `Il y a ${Math.floor(d / 30)} mois`
+  if (d < 30) return t.n_d_ago(d)
+  return t.n_mo_ago(Math.floor(d / 30))
 }
 
 const initials = (s: string) =>
@@ -102,6 +106,9 @@ const CSS = `
     .c-tabbar  { display: none; }
     .c-scroll  { padding-bottom: 40px; }
   }
+
+  /* RTL overrides */
+  [dir="rtl"] .c-sidebar { border-right: none; border-left: .5px solid rgba(21, 16, 31, 0.14); }
 `
 
 // ─── SVG Icons ────────────────────────────────────────────────────────────────
@@ -117,52 +124,70 @@ const IconScan = () => (
     <rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" />
   </svg>
 )
-const IconChevron = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+const IconChevron = ({ isRtl }: { isRtl: boolean }) => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+    style={{ transform: isRtl ? 'scaleX(-1)' : undefined }}>
     <path d="M9 18l6-6-6-6" />
   </svg>
 )
-const IconBack = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+const IconBack = ({ isRtl }: { isRtl: boolean }) => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+    style={{ transform: isRtl ? 'scaleX(-1)' : undefined }}>
     <path d="M15 18l-6-6 6-6" />
   </svg>
 )
 
+// ─── Language toggle ──────────────────────────────────────────────────────────
+
+function LangToggle({ t, onToggle }: { t: Tr; onToggle: () => void }) {
+  return (
+    <button
+      onClick={onToggle}
+      style={{ fontSize: 12, fontWeight: 700, color: '#5B21B6', background: '#EDE6FB', borderRadius: 99, padding: '5px 12px', border: '1px solid #C4B5FD', cursor: 'pointer', flexShrink: 0 }}
+    >
+      {t.lang_toggle}
+    </button>
+  )
+}
+
 // ─── Navigation ───────────────────────────────────────────────────────────────
 
-function Sidebar({ onScan, isHome }: { onScan: () => void; isHome: boolean }) {
+function Sidebar({ onScan, isHome, t, isRtl, onLangToggle }: { onScan: () => void; isHome: boolean; t: Tr; isRtl: boolean; onLangToggle: () => void }) {
   const active = { background: '#EDE6FB', color: '#5B21B6', fontWeight: 700 }
   const normal = { color: '#2A2236', fontWeight: 500 }
   return (
-    <aside className="c-sidebar">
+    <aside className="c-sidebar" dir={isRtl ? 'rtl' : 'ltr'}>
       <div style={{ padding: '32px 24px 20px', borderBottom: '.5px solid rgba(21, 16, 31, 0.08)' }}>
         <div className="wordmark" style={{ fontSize: 26, color: '#15101F' }}>
           Fid<span className="accent">è</span>le
         </div>
-        <div className="eyebrow" style={{ fontSize: 10, color: '#5B21B6', marginTop: 4 }}>Portefeuille fidélité</div>
+        <div style={{ fontSize: 10, color: '#5B21B6', marginTop: 4 }}>{t.wallet_subtitle}</div>
       </div>
-      <nav style={{ padding: '16px 12px' }}>
+      <nav style={{ padding: '16px 12px', flex: 1 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 14, fontSize: 15, transition: 'all 0.2s', ...(isHome ? active : normal) }}>
-          <IconHome /> Accueil
+          <IconHome /> {t.home_tab}
         </div>
         <button onClick={onScan} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 14, fontSize: 15, marginTop: 4, transition: 'all 0.2s', ...normal }}>
-          <IconScan /> Scanner
+          <IconScan /> {t.scan_tab}
         </button>
       </nav>
+      <div style={{ padding: '16px 24px 32px' }}>
+        <LangToggle t={t} onToggle={onLangToggle} />
+      </div>
     </aside>
   )
 }
 
-function TabBar({ onScan, isHome }: { onScan: () => void; isHome: boolean }) {
+function TabBar({ onScan, isHome, t }: { onScan: () => void; isHome: boolean; t: Tr }) {
   return (
     <nav className="c-tabbar">
       <div className="c-tab" style={{ color: isHome ? '#5B21B6' : '#2A2236' }}>
         <IconHome />
-        <span className="c-tab-label">Accueil</span>
+        <span className="c-tab-label">{t.home_tab}</span>
       </div>
       <button className="c-tab" onClick={onScan} style={{ color: '#2A2236' }}>
         <IconScan />
-        <span className="c-tab-label">Scanner</span>
+        <span className="c-tab-label">{t.scan_tab}</span>
       </button>
     </nav>
   )
@@ -170,7 +195,11 @@ function TabBar({ onScan, isHome }: { onScan: () => void; isHome: boolean }) {
 
 // ─── Welcome (no phone stored) ────────────────────────────────────────────────
 
-function WelcomeScreen({ onScan, onPhoneLogin }: { onScan: () => void; onPhoneLogin: (phone: string, name: string) => void }) {
+function WelcomeScreen({ onScan, onPhoneLogin, t, isRtl, onLangToggle }: {
+  onScan: () => void
+  onPhoneLogin: (phone: string, name: string) => void
+  t: Tr; isRtl: boolean; onLangToggle: () => void
+}) {
   const [step,     setStep]     = useState<'phone' | 'password'>('phone')
   const [phone,    setPhone]    = useState('')
   const [password, setPassword] = useState('')
@@ -184,9 +213,9 @@ function WelcomeScreen({ onScan, onPhoneLogin }: { onScan: () => void; onPhoneLo
     try {
       const res  = await fetch('/api/client/data', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone: p }) })
       const data = await res.json()
-      if (!Array.isArray(data) || data.length === 0) setErr('Aucun compte trouvé. Scannez un QR code pour créer votre compte.')
+      if (!Array.isArray(data) || data.length === 0) setErr(t.no_account_found)
       else setStep('password')
-    } catch { setErr('Erreur réseau, réessayez.') }
+    } catch { setErr(t.network_error) }
     finally   { setBusy(false) }
   }
 
@@ -196,9 +225,9 @@ function WelcomeScreen({ onScan, onPhoneLogin }: { onScan: () => void; onPhoneLo
     try {
       const res  = await fetch('/api/client/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone: phone.trim(), password }) })
       const data = await res.json()
-      if (!res.ok) { setErr(data.error ?? 'Mot de passe incorrect.'); return }
+      if (!res.ok) { setErr(data.error ?? t.wrong_password_err); return }
       onPhoneLogin(phone.trim(), data.name ?? '')
-    } catch { setErr('Erreur réseau, réessayez.') }
+    } catch { setErr(t.network_error) }
     finally   { setBusy(false) }
   }
 
@@ -206,27 +235,32 @@ function WelcomeScreen({ onScan, onPhoneLogin }: { onScan: () => void; onPhoneLo
   const btnSt   = (off: boolean): React.CSSProperties => ({ background: '#5B21B6', color: '#fff', borderRadius: 16, padding: '14px 20px', fontSize: 16, fontWeight: 700, opacity: off ? .4 : 1, transition: 'all .2s', whiteSpace: 'nowrap' as const, flexShrink: 0 })
 
   return (
-    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 28px', background: '#fff' }}>
+    <div dir={isRtl ? 'rtl' : 'ltr'} style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 28px', background: '#fff', position: 'relative' }}>
+      {/* Language toggle */}
+      <div style={{ position: 'absolute', top: 24, right: 24 }}>
+        <LangToggle t={t} onToggle={onLangToggle} />
+      </div>
+
       <div style={{ width: 80, height: 80, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 28, color: '#5B21B6' }}>
         <svg viewBox="0 0 100 100" width="80" height="80" aria-label="Fidèle">
           <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" strokeWidth="3" />
           <circle cx="50" cy="50" r="11" fill="currentColor" />
         </svg>
       </div>
-      <h1 className="hero-display text-center mb-3">Fid<span className="accent">è</span>le</h1>
-      <p style={{ fontSize: 15, color: 'var(--fidele-ink-2)', opacity: .55, lineHeight: 1.6, maxWidth: 260, marginBottom: 40, textAlign: 'center' }}>
-        {step === 'phone' ? 'Accédez à votre portefeuille fidélité.' : 'Entrez votre mot de passe pour continuer.'}
+      <h1 className="wordmark" style={{ fontSize: 36, color: '#15101F', textAlign: 'center', marginBottom: 12 }}>Fid<span className="accent">è</span>le</h1>
+      <p style={{ fontSize: 15, color: 'rgba(21,16,31,.5)', lineHeight: 1.6, maxWidth: 260, marginBottom: 40, textAlign: 'center' }}>
+        {step === 'phone' ? t.wallet_access : t.enter_password}
       </p>
 
       {step === 'phone' ? (
         <>
           <form onSubmit={handlePhone} style={{ width: '100%', maxWidth: 340, marginBottom: 24 }}>
-            <p className="eyebrow" style={{ fontSize: 10, color: '#5B21B6', marginBottom: 10 }}>J'ai déjà un compte</p>
+            <p style={{ fontSize: 10, color: '#5B21B6', fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 10 }}>{t.already_have_account}</p>
             <div style={{ display: 'flex', gap: 10 }}>
               <input type="tel" placeholder="Ex: 0612345678" value={phone} onChange={e => { setPhone(e.target.value); setErr('') }}
-                disabled={busy} className="num-mono" style={inputSt} />
+                disabled={busy} dir="ltr" className="num-mono" style={inputSt} />
               <button type="submit" disabled={busy || !phone.trim()} style={btnSt(busy || !phone.trim())}>
-                {busy ? '…' : '→'}
+                {busy ? '…' : isRtl ? '←' : '→'}
               </button>
             </div>
             {err && <p style={{ fontSize: 13, color: '#EF4444', marginTop: 10, fontWeight: 500 }}>{err}</p>}
@@ -234,30 +268,30 @@ function WelcomeScreen({ onScan, onPhoneLogin }: { onScan: () => void; onPhoneLo
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, width: '100%', maxWidth: 340, marginBottom: 24 }}>
             <div style={{ flex: 1, height: 1, background: 'rgba(21,16,31,.08)' }} />
-            <span className="eyebrow" style={{ fontSize: 10, color: 'rgba(21,16,31,.2)' }}>OU</span>
+            <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'rgba(21,16,31,.2)' }}>{t.or}</span>
             <div style={{ flex: 1, height: 1, background: 'rgba(21,16,31,.08)' }} />
           </div>
 
           <button onClick={onScan} style={{ width: '100%', maxWidth: 340, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 10, background: '#5B21B6', color: '#fff', borderRadius: 18, padding: '18px 32px', fontSize: 17, fontWeight: 700, boxShadow: '0 12px 32px rgba(91,33,182,.3)' }}>
-            <IconScan /> Scanner un QR code
+            <IconScan /> {t.scan_qr_btn}
           </button>
           <p style={{ marginTop: 16, fontSize: 13, color: 'rgba(21,16,31,.3)', textAlign: 'center', fontWeight: 500 }}>
-            Première visite ? Scannez le QR code du restaurant.
+            {t.first_visit_hint}
           </p>
         </>
       ) : (
         <form onSubmit={handlePassword} style={{ width: '100%', maxWidth: 340, display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div style={{ display: 'flex', gap: 10 }}>
-            <input type="password" placeholder="Mot de passe" value={password} onChange={e => { setPassword(e.target.value); setErr('') }}
-              disabled={busy} style={{ ...inputSt, flex: 1, letterSpacing: '0.2em' }} autoFocus />
+            <input type="password" placeholder={t.password_ph} value={password} onChange={e => { setPassword(e.target.value); setErr('') }}
+              disabled={busy} dir="ltr" style={{ ...inputSt, flex: 1, letterSpacing: '0.2em' }} autoFocus />
             <button type="submit" disabled={busy || !password} style={btnSt(busy || !password)}>
-              {busy ? '…' : '→'}
+              {busy ? '…' : isRtl ? '←' : '→'}
             </button>
           </div>
           {err && <p style={{ fontSize: 13, color: '#EF4444', fontWeight: 500 }}>{err}</p>}
           <button type="button" onClick={() => { setStep('phone'); setPassword(''); setErr('') }}
             style={{ fontSize: 13, color: 'rgba(21,16,31,.4)', fontWeight: 500, padding: '8px 0' }}>
-            ← Modifier le numéro
+            {t.change_number_btn}
           </button>
         </form>
       )}
@@ -267,9 +301,10 @@ function WelcomeScreen({ onScan, onPhoneLogin }: { onScan: () => void; onPhoneLo
 
 // ─── Home screen ──────────────────────────────────────────────────────────────
 
-function HomeScreen({ clients, name, onOpen, onScan }: {
+function HomeScreen({ clients, name, onOpen, onScan, t, isRtl, onLangToggle }: {
   clients: Client[]; name: string
   onOpen: (id: string) => void; onScan: () => void
+  t: Tr; isRtl: boolean; onLangToggle: () => void
 }) {
   const total = clients.reduce((s, c) => s + (c.points_balance || 0), 0)
 
@@ -278,11 +313,14 @@ function HomeScreen({ clients, name, onOpen, onScan }: {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '32px 24px 0' }}>
         <div>
-          <p className="eyebrow" style={{ fontSize: 10, color: '#5B21B6' }}>Bonjour,</p>
+          <p style={{ fontSize: 10, color: '#5B21B6', fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase' }}>{t.greeting}</p>
           <h1 style={{ fontSize: 28, fontWeight: 800, color: '#15101F', letterSpacing: '-.02em', marginTop: 4 }}>{name}</h1>
         </div>
-        <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'linear-gradient(135deg,#5B21B6,#3F1685)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 15, flexShrink: 0, boxShadow: '0 8px 20px rgba(91,33,182,0.2)' }}>
-          {initials(name)}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <LangToggle t={t} onToggle={onLangToggle} />
+          <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'linear-gradient(135deg,#5B21B6,#3F1685)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 15, flexShrink: 0, boxShadow: '0 8px 20px rgba(91,33,182,0.2)' }}>
+            {initials(name)}
+          </div>
         </div>
       </div>
 
@@ -295,7 +333,7 @@ function HomeScreen({ clients, name, onOpen, onScan }: {
         }}>
           {/* Background logo */}
           <svg viewBox="0 0 100 100" aria-hidden style={{
-            position: 'absolute', right: -20, top: '50%', transform: 'translateY(-50%)',
+            position: 'absolute', [isRtl ? 'left' : 'right']: -20, top: '50%', transform: 'translateY(-50%)',
             width: 160, height: 160, color: 'rgba(255,255,255,0.06)', pointerEvents: 'none',
           }}>
             <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" strokeWidth="3" />
@@ -303,18 +341,16 @@ function HomeScreen({ clients, name, onOpen, onScan }: {
           </svg>
 
           <div>
-            <p className="eyebrow" style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)' }}>Total fidélité</p>
+            <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase' }}>{t.total_loyalty}</p>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginTop: 8 }}>
               <span className="num-mono" style={{ fontSize: 56, fontWeight: 800, lineHeight: 1, letterSpacing: '-.03em' }}>{total.toLocaleString('fr-FR')}</span>
-              <span style={{ fontSize: 18, color: 'rgba(255,255,255,.4)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em' }}>pts</span>
+              <span style={{ fontSize: 18, color: 'rgba(255,255,255,.4)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{t.pts}</span>
             </div>
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
             <p style={{ fontSize: 13, color: 'rgba(255,255,255,.4)', fontWeight: 500 }}>
-              {clients.length > 0
-                ? `Dans ${clients.length} restaurant${clients.length > 1 ? 's' : ''}`
-                : 'Scannez pour commencer'}
+              {clients.length > 0 ? t.in_n_restaurants(clients.length) : t.scan_to_start}
             </p>
             <div className="wordmark" style={{ fontSize: 20, opacity: 0.5 }}>
               Fid<span className="accent">è</span>le
@@ -328,19 +364,19 @@ function HomeScreen({ clients, name, onOpen, onScan }: {
         {clients.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '48px 0' }}>
             <div style={{ fontSize: 48, marginBottom: 16 }}>🏪</div>
-            <p style={{ fontSize: 17, fontWeight: 700, color: '#15101F', marginBottom: 8 }}>Aucun restaurant encore</p>
+            <p style={{ fontSize: 17, fontWeight: 700, color: '#15101F', marginBottom: 8 }}>{t.no_restaurant_title}</p>
             <p style={{ fontSize: 14, color: '#2A2236', opacity: 0.6, lineHeight: 1.6, maxWidth: 240, margin: '0 auto 24px' }}>
-              Scannez le QR code d'un restaurant pour l'ajouter à votre portefeuille.
+              {t.no_restaurant_hint}
             </p>
             <button onClick={onScan} style={{ display: 'inline-flex', alignItems: 'center', gap: 10, background: '#5B21B6', color: '#fff', borderRadius: 16, padding: '14px 28px', fontSize: 15, fontWeight: 700, boxShadow: '0 8px 20px rgba(91,33,182,0.2)' }}>
-              <IconScan /> Scanner maintenant
+              <IconScan /> {t.scan_now}
             </button>
           </div>
         ) : (
           <>
-            <p className="section-title">Mes restaurants</p>
+            <p className="section-title">{t.my_restaurants}</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {clients.map(c => <RestoCard key={c.id} client={c} onClick={() => onOpen(c.id)} />)}
+              {clients.map(c => <RestoCard key={c.id} client={c} onClick={() => onOpen(c.id)} t={t} isRtl={isRtl} />)}
             </div>
           </>
         )}
@@ -349,18 +385,18 @@ function HomeScreen({ clients, name, onOpen, onScan }: {
   )
 }
 
-function RestoCard({ client, onClick }: { client: Client; onClick: () => void }) {
+function RestoCard({ client, onClick, t, isRtl }: { client: Client; onClick: () => void; t: Tr; isRtl: boolean }) {
   const tier = tierFor(client.points_balance)
   const prog = tierProgress(client.points_balance)
   const name = client.restaurants?.name ?? '—'
   const pts  = client.points_balance || 0
 
-  const expiry = client.next_expiry ?? null
+  const expiry   = client.next_expiry ?? null
   const daysLeft = expiry ? Math.ceil((new Date(expiry.expires_at).getTime() - Date.now()) / 86400000) : null
   const urgent   = daysLeft !== null && daysLeft <= 30
 
   return (
-    <button onClick={onClick} className="shadow-card" style={{ background: '#fff', borderRadius: 24, padding: '20px', textAlign: 'left', display: 'block', width: '100%', border: 'none' }}>
+    <button onClick={onClick} className="shadow-card" style={{ background: '#fff', borderRadius: 24, padding: '20px', textAlign: isRtl ? 'right' : 'left', display: 'block', width: '100%', border: 'none' }}>
       {/* Top row */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
         <div style={{ width: 52, height: 52, borderRadius: 18, background: 'var(--fidele-violet-tint)', color: 'var(--fidele-violet)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 24, flexShrink: 0, overflow: 'hidden' }}>
@@ -370,27 +406,29 @@ function RestoCard({ client, onClick }: { client: Client; onClick: () => void })
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ fontSize: 17, fontWeight: 700, color: 'var(--fidele-ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</p>
-          <p style={{ fontSize: 13, color: 'var(--fidele-ink-2)', opacity: 0.5, marginTop: 2, fontWeight: 500 }}>{client.total_visits ?? 0} visite{(client.total_visits ?? 0) > 1 ? 's' : ''}</p>
+          <p style={{ fontSize: 13, color: 'var(--fidele-ink-2)', opacity: 0.5, marginTop: 2, fontWeight: 500 }}>{t.n_visits(client.total_visits ?? 0)}</p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-          <div style={{ textAlign: 'right' }}>
+          <div style={{ textAlign: isRtl ? 'left' : 'right' }}>
             <p className="num-mono" style={{ fontSize: 28, fontWeight: 800, color: 'var(--fidele-ink)', lineHeight: 1, letterSpacing: '-.02em' }}>{pts.toLocaleString('fr-FR')}</p>
-            <p className="eyebrow" style={{ fontSize: 9, color: 'var(--fidele-violet)', marginTop: 4 }}>pts</p>
+            <p style={{ fontSize: 9, color: 'var(--fidele-violet)', marginTop: 4, fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase' }}>{t.pts}</p>
           </div>
-          <div style={{ color: 'rgba(21, 16, 31, 0.2)', marginTop: 2 }}><IconChevron /></div>
+          <div style={{ color: 'rgba(21, 16, 31, 0.2)', marginTop: 2 }}><IconChevron isRtl={isRtl} /></div>
         </div>
       </div>
 
       {/* Tier & Progress */}
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-          <span className="eyebrow" style={{ fontSize: 9, color: tier.color, background: tier.bg, padding: '4px 10px', borderRadius: 99, border: `1px solid ${tier.color}20` }}>{tier.name}</span>
+          <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase', color: tier.color, background: tier.bg, padding: '4px 10px', borderRadius: 99, border: `1px solid ${tier.color}20` }}>{tTier(tier.name, t)}</span>
           {prog.next
-            ? <span style={{ fontSize: 11, color: '#2A2236', opacity: 0.5, fontWeight: 500 }}>encore <span className="num-mono" style={{ fontWeight: 700, color: '#15101F' }}>{prog.toNext}</span> pts → {prog.next.name}</span>
-            : <span style={{ fontSize: 11, color: tier.color, fontWeight: 700 }}>Palier maximum ✨</span>}
+            ? <span style={{ fontSize: 11, color: '#2A2236', opacity: 0.5, fontWeight: 500 }}>
+                {t.n_more_pts_to(prog.toNext, tTier(prog.next.name, t))}
+              </span>
+            : <span style={{ fontSize: 11, color: tier.color, fontWeight: 700 }}>{t.max_tier}</span>}
         </div>
         <div style={{ height: 6, background: '#F0EEF8', borderRadius: 99, overflow: 'hidden' }}>
-          <div style={{ height: '100%', width: `${prog.pct}%`, background: tier.color, borderRadius: 99, transition: 'width .6s cubic-bezier(.4,0,.2,1)' }} />
+          <div style={{ height: '100%', width: `${prog.pct}%`, background: tier.color, borderRadius: 99, transition: 'width .6s cubic-bezier(.4,0,.2,1)', ...(isRtl ? { marginLeft: 'auto' } : {}) }} />
         </div>
       </div>
 
@@ -399,7 +437,7 @@ function RestoCard({ client, onClick }: { client: Client; onClick: () => void })
         <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', borderRadius: 10, background: urgent ? '#FEF2F2' : '#FFFBEB', border: `1px solid ${urgent ? '#FECACA' : '#FDE68A'}` }}>
           <span style={{ fontSize: 13 }}>{urgent ? '⚠️' : '⏳'}</span>
           <p style={{ fontSize: 12, fontWeight: 600, color: urgent ? '#DC2626' : '#B45309' }}>
-            {expiry.points_earned} pt{expiry.points_earned > 1 ? 's' : ''} expirent dans {daysLeft} jour{daysLeft > 1 ? 's' : ''}
+            {t.expiry_pill(expiry.points_earned, daysLeft)}
           </p>
           <span style={{ marginLeft: 'auto', fontSize: 11, color: urgent ? '#EF4444' : '#D97706', fontWeight: 500 }}>
             {new Date(expiry.expires_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
@@ -412,8 +450,8 @@ function RestoCard({ client, onClick }: { client: Client; onClick: () => void })
 
 // ─── Detail screen ────────────────────────────────────────────────────────────
 
-function DetailScreen({ client, clientName, onBack }: {
-  client: Client; clientName: string; onBack: () => void
+function DetailScreen({ client, clientName, onBack, t, isRtl }: {
+  client: Client; clientName: string; onBack: () => void; t: Tr; isRtl: boolean
 }) {
   const tier    = tierFor(client.points_balance)
   const prog    = tierProgress(client.points_balance)
@@ -476,8 +514,13 @@ function DetailScreen({ client, clientName, onBack }: {
           position: 'relative',
         }}>
           <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.35)' }} />
-          <button onClick={onBack} style={{ position: 'absolute', top: 16, left: 16, width: 40, height: 40, borderRadius: '50%', background: 'rgba(0,0,0,.3)', border: '1px solid rgba(255,255,255,.2)', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
-            <IconBack />
+          <button onClick={onBack} style={{
+            position: 'absolute', top: 16, [isRtl ? 'right' : 'left']: 16,
+            width: 40, height: 40, borderRadius: '50%', background: 'rgba(0,0,0,.3)',
+            border: '1px solid rgba(255,255,255,.2)', color: '#fff',
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', zIndex: 1
+          }}>
+            <IconBack isRtl={isRtl} />
           </button>
         </div>
 
@@ -498,8 +541,8 @@ function DetailScreen({ client, clientName, onBack }: {
             </div>
             <div style={{ paddingBottom: 4 }}>
               <h2 style={{ fontSize: 24, fontWeight: 800, letterSpacing: '-.02em', color: '#fff' }}>{rName}</h2>
-              <p className="eyebrow" style={{ fontSize: 10, color: 'rgba(255,255,255,.45)', marginTop: 2 }}>
-                {client.total_visits ?? 0} visite{(client.total_visits ?? 0) > 1 ? 's' : ''}
+              <p style={{ fontSize: 10, color: 'rgba(255,255,255,.45)', marginTop: 2, fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase' }}>
+                {t.n_visits(client.total_visits ?? 0)}
               </p>
             </div>
           </div>
@@ -509,28 +552,27 @@ function DetailScreen({ client, clientName, onBack }: {
         </div>
 
         <div style={{ background: '#15101F', padding: '0 24px 32px' }}>
-
-        {/* Balance card */}
-        <div style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 24, padding: '24px', boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
-            <div>
-              <p className="eyebrow" style={{ fontSize: 9, color: 'rgba(255,255,255,.4)' }}>Votre solde</p>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginTop: 8 }}>
-                <span className="num-mono" style={{ fontSize: 56, fontWeight: 800, lineHeight: 1, letterSpacing: '-.03em' }}>{pts.toLocaleString('fr-FR')}</span>
-                <span style={{ fontSize: 18, color: 'rgba(255,255,255,.4)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em' }}>pts</span>
+          {/* Balance card */}
+          <div style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 24, padding: '24px', boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+              <div>
+                <p style={{ fontSize: 9, color: 'rgba(255,255,255,.4)', fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase' }}>{t.your_balance}</p>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginTop: 8 }}>
+                  <span className="num-mono" style={{ fontSize: 56, fontWeight: 800, lineHeight: 1, letterSpacing: '-.03em' }}>{pts.toLocaleString('fr-FR')}</span>
+                  <span style={{ fontSize: 18, color: 'rgba(255,255,255,.4)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{t.pts}</span>
+                </div>
               </div>
+              <span style={{ background: '#fff', color: tier.color, fontSize: 11, fontWeight: 800, padding: '6px 14px', borderRadius: 99, marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{tTier(tier.name, t)}</span>
             </div>
-            <span style={{ background: '#fff', color: tier.color, fontSize: 11, fontWeight: 800, padding: '6px 14px', borderRadius: 99, marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{tier.name}</span>
+            <div style={{ height: 6, background: 'rgba(255,255,255,.1)', borderRadius: 99, overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${prog.pct}%`, background: '#E9A23B', borderRadius: 99, transition: 'width .6s ease', ...(isRtl ? { marginLeft: 'auto' } : {}) }} />
+            </div>
+            <p style={{ fontSize: 13, color: 'rgba(255,255,255,.5)', marginTop: 14, fontWeight: 500 }}>
+              {prog.next
+                ? <>{t.n_more_to_reach(prog.toNext, tTier(prog.next.name, t))}</>
+                : t.you_are_max_tier}
+            </p>
           </div>
-          <div style={{ height: 6, background: 'rgba(255,255,255,.1)', borderRadius: 99, overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: `${prog.pct}%`, background: '#E9A23B', borderRadius: 99, transition: 'width .6s ease' }} />
-          </div>
-          <p style={{ fontSize: 13, color: 'rgba(255,255,255,.5)', marginTop: 14, fontWeight: 500 }}>
-            {prog.next
-              ? <>Encore <strong className="num-mono" style={{ color: '#fff' }}>{prog.toNext} pts</strong> pour atteindre <strong style={{ color: '#E9A23B' }}>{prog.next.name}</strong></>
-              : 'Vous êtes au palier maximum ✨'}
-          </p>
-        </div>
         </div>
       </div>
 
@@ -539,17 +581,17 @@ function DetailScreen({ client, clientName, onBack }: {
 
         {/* Expiry warning */}
         {client.next_expiry && (() => {
-          const daysLeft = Math.ceil((new Date(client.next_expiry.expires_at).getTime() - Date.now()) / 86400000)
+          const daysLeft = Math.ceil((new Date(client.next_expiry!.expires_at).getTime() - Date.now()) / 86400000)
           const urgent = daysLeft <= 30
           return (
             <div style={{ marginBottom: 20, background: urgent ? '#FEF2F2' : '#FFFBEB', border: `1px solid ${urgent ? '#FECACA' : '#FDE68A'}`, borderRadius: 14, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
               <span style={{ fontSize: 20 }}>{urgent ? '⚠️' : '⏳'}</span>
               <div>
                 <p style={{ fontSize: 13, fontWeight: 700, color: urgent ? '#DC2626' : '#B45309' }}>
-                  {client.next_expiry.points_earned} pt{client.next_expiry.points_earned > 1 ? 's' : ''} expirent dans {daysLeft} jour{daysLeft > 1 ? 's' : ''}
+                  {t.expiry_warning_title(client.next_expiry!.points_earned, daysLeft)}
                 </p>
                 <p style={{ fontSize: 12, color: urgent ? '#EF4444' : '#D97706', marginTop: 2 }}>
-                  Utilisez vos points avant le {new Date(client.next_expiry.expires_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  {t.expiry_use_before(new Date(client.next_expiry!.expires_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }))}
                 </p>
               </div>
             </div>
@@ -559,11 +601,11 @@ function DetailScreen({ client, clientName, onBack }: {
         {/* Rewards */}
         {rewardsLoaded && (
           <div style={{ marginBottom: 36 }}>
-            <p className="section-title">Récompenses disponibles</p>
+            <p className="section-title">{t.available_rewards}</p>
             {rewards.length === 0 ? (
               <div className="card" style={{ padding: '32px 20px', textAlign: 'center' }}>
                 <p style={{ fontSize: 32, marginBottom: 12 }}>🎁</p>
-                <p style={{ fontSize: 14, color: '#2A2236', opacity: 0.5, fontWeight: 500 }}>Aucune récompense disponible pour ce restaurant.</p>
+                <p style={{ fontSize: 14, color: '#2A2236', opacity: 0.5, fontWeight: 500 }}>{t.no_rewards}</p>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -579,16 +621,16 @@ function DetailScreen({ client, clientName, onBack }: {
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <p style={{ fontSize: 15, fontWeight: 700, color: '#15101F' }}>{r.name}</p>
                           {r.description && <p style={{ fontSize: 12, color: '#2A2236', opacity: 0.5, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.description}</p>}
-                          <p className="num-mono" style={{ fontSize: 13, fontWeight: 700, color: '#5B21B6', marginTop: 4 }}>{r.points_cost.toLocaleString('fr-FR')} pts</p>
+                          <p className="num-mono" style={{ fontSize: 13, fontWeight: 700, color: '#5B21B6', marginTop: 4 }}>{r.points_cost.toLocaleString('fr-FR')} {t.pts}</p>
                         </div>
                         {isSent ? (
-                          <span className="eyebrow" style={{ fontSize: 10, fontWeight: 700, color: '#16A34A', background: '#F0FDF4', padding: '8px 14px', borderRadius: 99, whiteSpace: 'nowrap', flexShrink: 0, border: '1px solid #16A34A20' }}>Envoyé ✓</span>
+                          <span style={{ fontSize: 10, fontWeight: 700, color: '#16A34A', background: '#F0FDF4', padding: '8px 14px', borderRadius: 99, whiteSpace: 'nowrap', flexShrink: 0, border: '1px solid #16A34A20' }}>{t.sent_label}</span>
                         ) : (
                           <button
                             onClick={() => canAfford && !isSent && setConfirming(r)}
                             disabled={!canAfford}
                             style={{ background: canAfford ? '#5B21B6' : 'rgba(21, 16, 31, 0.05)', color: canAfford ? '#fff' : 'rgba(21, 16, 31, 0.3)', borderRadius: 12, padding: '10px 18px', fontSize: 14, fontWeight: 700, flexShrink: 0, transition: 'all 0.2s' }}>
-                            Utiliser
+                            {t.use_btn}
                           </button>
                         )}
                       </div>
@@ -602,11 +644,11 @@ function DetailScreen({ client, clientName, onBack }: {
 
         {/* Visit history */}
         <div>
-          <p className="section-title">Historique des visites</p>
+          <p className="section-title">{t.visit_history}</p>
           {(client.visits ?? []).length === 0 ? (
             <div className="card" style={{ padding: '32px 20px', textAlign: 'center' }}>
               <p style={{ fontSize: 36, marginBottom: 12 }}>🧾</p>
-              <p style={{ fontSize: 14, color: '#2A2236', opacity: 0.5, fontWeight: 500 }}>Aucune visite enregistrée.</p>
+              <p style={{ fontSize: 14, color: '#2A2236', opacity: 0.5, fontWeight: 500 }}>{t.no_visits}</p>
             </div>
           ) : (
             <div className="card">
@@ -617,11 +659,11 @@ function DetailScreen({ client, clientName, onBack }: {
                       🛒
                     </div>
                     <div>
-                      <p className="num-mono" style={{ fontSize: 15, fontWeight: 700, color: '#15101F' }}>{v.amount_paid} MAD</p>
-                      <p style={{ fontSize: 12, color: '#2A2236', opacity: 0.5, marginTop: 2, fontWeight: 500 }}>{ago(v.created_at)}</p>
+                      <p className="num-mono" style={{ fontSize: 15, fontWeight: 700, color: '#15101F' }}>{v.amount_paid} {t.mad}</p>
+                      <p style={{ fontSize: 12, color: '#2A2236', opacity: 0.5, marginTop: 2, fontWeight: 500 }}>{ago(v.created_at, t)}</p>
                     </div>
                   </div>
-                  <span className="num-mono" style={{ fontSize: 15, fontWeight: 800, color: '#16A34A' }}>+{v.points_earned} pts</span>
+                  <span className="num-mono" style={{ fontSize: 15, fontWeight: 800, color: '#16A34A' }}>+{v.points_earned} {t.pts}</span>
                 </div>
               ))}
             </div>
@@ -637,17 +679,17 @@ function DetailScreen({ client, clientName, onBack }: {
             <h3 style={{ fontSize: 24, fontWeight: 800, color: '#15101F', marginBottom: 12 }}>{confirming.name}</h3>
             {reqError && <div style={{ fontSize: 13, color: '#EF4444', marginBottom: 16, background: '#FEF2F2', padding: '10px', borderRadius: 12, fontWeight: 500 }}>{reqError}</div>}
             <p style={{ fontSize: 16, color: '#2A2236', opacity: 0.6, lineHeight: 1.6, marginBottom: 36 }}>
-              Vous allez utiliser <strong className="num-mono" style={{ color: '#5B21B6' }}>{confirming.points_cost} pts</strong>.<br />
-              Le restaurant doit valider votre demande.
+              {t.confirm_use_pts(confirming.points_cost)}<br />
+              {t.confirm_restaurant_validate}
             </p>
             <div style={{ display: 'flex', gap: 14 }}>
               <button onClick={() => { setConfirming(null); setReqError('') }}
                 style={{ flex: 1, padding: '16px', borderRadius: 16, border: '1.5px solid rgba(21, 16, 31, 0.1)', fontSize: 16, fontWeight: 700, color: '#2A2236', transition: 'all 0.2s' }}>
-                Annuler
+                {t.cancel}
               </button>
               <button onClick={() => requestReward(confirming)} disabled={sending}
                 style={{ flex: 1, padding: '16px', borderRadius: 16, background: '#5B21B6', color: '#fff', fontSize: 16, fontWeight: 700, transition: 'all 0.2s', boxShadow: '0 8px 20px rgba(91,33,182,0.2)' }}>
-                {sending ? '…' : 'Confirmer'}
+                {sending ? '…' : t.confirm}
               </button>
             </div>
           </div>
@@ -691,8 +733,17 @@ export default function ClientApp() {
   const [showScanner, setShowScanner] = useState(false)
   const [loading, setLoading] = useState(true)
   const [hasPhone, setHasPhone] = useState(false)
+  const [lang, setLang] = useState<Lang>('fr')
 
-  // Extracted so it can be called after scan too
+  const t      = T[lang]
+  const isRtl  = lang === 'ar'
+
+  function toggleLang() {
+    const next: Lang = lang === 'fr' ? 'ar' : 'fr'
+    setLang(next)
+    localStorage.setItem('fidele_lang', next)
+  }
+
   const loadData = useCallback(async (p: string) => {
     try {
       const res = await fetch('/api/client/data', {
@@ -703,7 +754,6 @@ export default function ClientApp() {
       const d = await res.json()
       if (Array.isArray(d)) {
         setClients(d)
-        // Sync name from DB if available
         if (d.length > 0 && d[0].name) {
           setClientName(d[0].name)
           localStorage.setItem('fidele_client_name', d[0].name)
@@ -713,6 +763,9 @@ export default function ClientApp() {
   }, [])
 
   useEffect(() => {
+    const savedLang = localStorage.getItem('fidele_lang') as Lang | null
+    if (savedLang === 'fr' || savedLang === 'ar') setLang(savedLang)
+
     const p = localStorage.getItem('fidele_client_phone')
     const n = localStorage.getItem('fidele_client_name') ?? ''
     if (!p) { setLoading(false); return }
@@ -722,7 +775,6 @@ export default function ClientApp() {
     loadData(p).finally(() => setLoading(false))
   }, [loadData])
 
-  // If screen points to a client that no longer exists, go back home
   const activeClient = screen !== 'home' ? (clients.find(c => c.id === screen) ?? null) : null
   useEffect(() => {
     if (screen !== 'home' && clients.length > 0 && !activeClient) setScreen('home')
@@ -746,7 +798,7 @@ export default function ClientApp() {
   if (!hasPhone) return (
     <>
       <style>{CSS}</style>
-      <WelcomeScreen onScan={() => setShowScanner(true)} onPhoneLogin={handlePhoneLogin} />
+      <WelcomeScreen onScan={() => setShowScanner(true)} onPhoneLogin={handlePhoneLogin} t={t} isRtl={isRtl} onLangToggle={toggleLang} />
       {showScanner && <Suspense fallback={null}><ScannerScreen onClose={() => {
         setShowScanner(false)
         const p = localStorage.getItem('fidele_client_phone')
@@ -760,17 +812,17 @@ export default function ClientApp() {
   return (
     <>
       <style>{CSS}</style>
-      <div className="c-root">
-        <Sidebar isHome={isHome} onScan={() => setShowScanner(true)} />
+      <div className="c-root" dir={isRtl ? 'rtl' : 'ltr'}>
+        <Sidebar isHome={isHome} onScan={() => setShowScanner(true)} t={t} isRtl={isRtl} onLangToggle={toggleLang} />
         <div className="c-main">
           <div className="c-scroll">
             {isHome
-              ? <HomeScreen clients={clients} name={clientName} onOpen={id => setScreen(id)} onScan={() => setShowScanner(true)} />
+              ? <HomeScreen clients={clients} name={clientName} onOpen={id => setScreen(id)} onScan={() => setShowScanner(true)} t={t} isRtl={isRtl} onLangToggle={toggleLang} />
               : activeClient
-                ? <DetailScreen client={activeClient} clientName={clientName} onBack={() => setScreen('home')} />
+                ? <DetailScreen client={activeClient} clientName={clientName} onBack={() => setScreen('home')} t={t} isRtl={isRtl} />
                 : null}
           </div>
-          <TabBar isHome={isHome} onScan={() => setShowScanner(true)} />
+          <TabBar isHome={isHome} onScan={() => setShowScanner(true)} t={t} />
         </div>
       </div>
       {showScanner && (
