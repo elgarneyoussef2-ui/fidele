@@ -8,7 +8,7 @@ function makeClient(req: NextRequest, res: NextResponse) {
     {
       cookies: {
         getAll() { return req.cookies.getAll() },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
           cookiesToSet.forEach(({ name, value, options }) =>
             res.cookies.set(name, value, options as any)
           )
