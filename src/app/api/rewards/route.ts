@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic'
 
-import { createAdminClient } from '@/lib/supabase/server'
+import { createAdminClient, createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
 export async function GET(req: Request) {
@@ -25,10 +25,14 @@ export async function POST(req: Request) {
   const { name, description, points_cost, active } = body
   if (!name || !points_cost) return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
 
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+
   const admin = await createAdminClient()
 
   const { data: restaurant } = await (admin.from('restaurants') as any)
-    .select('id').order('created_at', { ascending: true }).limit(1).single()
+    .select('id').eq('owner_id', user.id).single()
   if (!restaurant) return NextResponse.json({ error: 'No restaurant' }, { status: 404 })
 
   const { data, error } = await (admin.from('rewards') as any)

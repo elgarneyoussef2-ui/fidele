@@ -1,9 +1,9 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { LayoutDashboard, Gift, Settings, Users } from 'lucide-react'
+import { LayoutDashboard, Gift, Settings, Users, LogOut } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Logomark } from '@/components/brand/Logomark'
 
@@ -16,9 +16,15 @@ const NAV = [
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  const router = useRouter()
   const [restaurantName, setRestaurantName] = useState('')
   const [splash, setSplash] = useState(true)
   const [splashVisible, setSplashVisible] = useState(true)
+
+  async function handleLogout() {
+    await fetch('/api/auth/restaurant', { method: 'DELETE' })
+    router.push('/')
+  }
 
   useEffect(() => {
     fetch('/api/restaurant')
@@ -106,9 +112,16 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center shrink-0">
               <span className="text-primary-foreground text-[10px] font-bold">{initials}</span>
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <p className="text-xs font-medium text-foreground truncate">{restaurantName || '…'}</p>
             </div>
+            <button
+              onClick={handleLogout}
+              title="Se déconnecter"
+              className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
           </div>
         </div>
       </aside>

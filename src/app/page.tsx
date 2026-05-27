@@ -34,6 +34,7 @@ export default function LandingPage() {
   const [animOut, setAnimOut] = useState(false)
 
   // login
+  const [email,    setEmail]    = useState('')
   const [password, setPassword] = useState('')
   const [loginErr, setLoginErr] = useState('')
 
@@ -53,10 +54,10 @@ export default function LandingPage() {
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     setBusy(true); setLoginErr('')
-    const res  = await fetch('/api/admin/auth', {
+    const res = await fetch('/api/auth/restaurant', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: 'admin', password }),
+      body: JSON.stringify({ email, password }),
     })
     if (res.ok) {
       router.push('/dashboard')
@@ -143,9 +144,14 @@ export default function LandingPage() {
         <Q>Connectez-vous</Q>
         <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <input
+            type="email" placeholder="Adresse email" value={email}
+            onChange={e => { setEmail(e.target.value); setLoginErr('') }}
+            style={inp} required autoFocus autoComplete="email"
+          />
+          <input
             type="password" placeholder="Mot de passe" value={password}
             onChange={e => { setPassword(e.target.value); setLoginErr('') }}
-            style={inp} required autoFocus
+            style={{ ...inp, marginTop: 8 }} required autoComplete="current-password"
           />
           {loginErr && <p style={{ fontSize: 13, color: '#EF4444', marginTop: 6, fontWeight: 500 }}>{loginErr}</p>}
           <button type="submit" style={nextBtn} disabled={busy}>

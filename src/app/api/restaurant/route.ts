@@ -1,14 +1,17 @@
 export const dynamic = 'force-dynamic'
 
-import { createAdminClient } from '@/lib/supabase/server'
+import { createAdminClient, createClient } from '@/lib/supabase/server'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function GET() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+
   const admin = await createAdminClient()
   const { data } = await (admin.from('restaurants') as any)
     .select('id, name, description, logo_url, cover_url, accent_color, phone, points_expiry_months, mad_per_point')
-    .order('created_at', { ascending: true })
-    .limit(1)
+    .eq('owner_id', user.id)
     .single()
 
   if (!data) return NextResponse.json({ error: 'Not found' }, { status: 404 })
@@ -16,14 +19,17 @@ export async function GET() {
 }
 
 export async function PATCH(req: NextRequest) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+
   const body = await req.json().catch(() => ({}))
   const { name, description, logo_url, cover_url, accent_color, phone, points_expiry_months, mad_per_point } = body
 
   const admin = await createAdminClient()
   const { data: restaurant } = await (admin.from('restaurants') as any)
     .select('id')
-    .order('created_at', { ascending: true })
-    .limit(1)
+    .eq('owner_id', user.id)
     .single()
 
   if (!restaurant) return NextResponse.json({ error: 'Not found' }, { status: 404 })

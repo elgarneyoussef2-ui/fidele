@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import {
   Loader2, Plus, Trash2, ShieldCheck, LogOut,
   Users, Store, Database, ChevronLeft, ChevronRight,
-  Search, RefreshCw, Sun, Moon,
+  Search, RefreshCw, Sun, Moon, Pencil, X,
 } from 'lucide-react'
 
 // ─── Theme tokens ─────────────────────────────────────────────────────────────
@@ -499,6 +499,12 @@ function RestaurantsTab({ th }: { th: Th }) {
   const [formError,   setFormError]   = useState('')
   const [form, setForm] = useState({ name: '', email: '', password: '', address: '' })
 
+  // Edit modal
+  const [editTarget, setEditTarget] = useState<Restaurant | null>(null)
+  const [editForm,   setEditForm]   = useState({ email: '', password: '' })
+  const [editSaving, setEditSaving] = useState(false)
+  const [editError,  setEditError]  = useState('')
+
   async function load() {
     setLoading(true)
     try {
@@ -534,6 +540,29 @@ function RestaurantsTab({ th }: { th: Th }) {
     setDeleting(r.id)
     await fetch('/api/admin/restaurants', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: r.id, userId: r.user_id }) })
     setDeleting(null)
+    const d = await (await fetch('/api/admin/restaurants')).json()
+    setRestaurants(Array.isArray(d) ? d : [])
+  }
+
+  function openEdit(r: Restaurant) {
+    setEditTarget(r)
+    setEditForm({ email: r.email, password: '' })
+    setEditError('')
+  }
+
+  async function handleEditSave(e: React.FormEvent) {
+    e.preventDefault()
+    if (!editTarget) return
+    if (!editForm.email && !editForm.password) { setEditError('Remplissez au moins un champ.'); return }
+    setEditSaving(true); setEditError('')
+    const body: Record<string, string> = { userId: editTarget.user_id }
+    if (editForm.email    && editForm.email    !== editTarget.email) body.email    = editForm.email
+    if (editForm.password)                                           body.password = editForm.password
+    if (Object.keys(body).length === 1) { setEditTarget(null); setEditSaving(false); return }
+    const res  = await fetch('/api/admin/restaurants', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    const data = await res.json()
+    if (!res.ok) { setEditError(data.error ?? 'Erreur.'); setEditSaving(false); return }
+    setEditTarget(null); setEditSaving(false)
     const d = await (await fetch('/api/admin/restaurants')).json()
     setRestaurants(Array.isArray(d) ? d : [])
   }
@@ -613,6 +642,65 @@ function RestaurantsTab({ th }: { th: Th }) {
         </div>
       )}
 
+      {/* Edit modal */}
+      {editTarget && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.55)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 300, padding: 24 }}>
+          <div style={{ background: th.modalBg, border: `1px solid ${th.modalBorder}`, borderRadius: 24, padding: '36px 32px', maxWidth: 440, width: '100%', boxShadow: `0 32px 64px ${th.shadow}`, position: 'relative' }}>
+            <button onClick={() => setEditTarget(null)} style={{ position: 'absolute', top: 16, right: 16, background: 'transparent', border: 'none', cursor: 'pointer', color: th.textMuted, padding: 6 }}>
+              <X size={20} />
+            </button>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 28 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 14, background: th.accentSoft, color: th.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 20, flexShrink: 0 }}>
+                {editTarget.name[0]?.toUpperCase()}
+              </div>
+              <div>
+                <p style={{ fontWeight: 700, fontSize: 17, color: th.text }}>{editTarget.name}</p>
+                <p style={{ fontSize: 12, color: th.textMuted, marginTop: 2 }}>Modifier les identifiants</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleEditSave} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {editError && (
+                <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 12, padding: '10px 14px', fontSize: 13, color: '#DC2626', fontWeight: 600 }}>
+                  {editError}
+                </div>
+              )}
+              <div>
+                <label style={{ display: 'block', fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: th.accent, marginBottom: 8 }}>
+                  Email
+                </label>
+                <input
+                  type="email" value={editForm.email}
+                  onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))}
+                  style={inp}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: th.accent, marginBottom: 8 }}>
+                  Nouveau mot de passe <span style={{ color: th.textFaint, fontWeight: 400, textTransform: 'none' }}>(laisser vide pour ne pas changer)</span>
+                </label>
+                <input
+                  type="password" value={editForm.password} placeholder="••••••••"
+                  onChange={e => setEditForm(p => ({ ...p, password: e.target.value }))}
+                  style={inp}
+                />
+              </div>
+              <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+                <button type="submit" disabled={editSaving}
+                  style={{ flex: 1, padding: '14px', borderRadius: 14, background: th.accent, color: '#fff', fontSize: 15, fontWeight: 700, border: 'none', cursor: 'pointer', opacity: editSaving ? .6 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                  {editSaving ? <><Loader2 size={18} style={{ animation: 'spin .8s linear infinite' }} /> Enregistrement…</> : 'Enregistrer'}
+                </button>
+                <button type="button" onClick={() => setEditTarget(null)}
+                  style={{ padding: '14px 20px', borderRadius: 14, border: `1px solid ${th.borderMed}`, background: 'transparent', fontSize: 15, fontWeight: 700, color: th.textMuted, cursor: 'pointer' }}>
+                  Annuler
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Table */}
       <div style={{ background: th.card, border: `1px solid ${th.border}`, borderRadius: 24, overflow: 'hidden', boxShadow: `0 4px 20px ${th.shadow}` }}>
         {loading ? (
@@ -633,6 +721,7 @@ function RestaurantsTab({ th }: { th: Th }) {
                   {['Restaurant', 'Clients', 'Inscrit le', ''].map((h, i) => (
                     <th key={i} style={{ padding: '12px 20px', fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: th.accent, textAlign: i === 3 ? 'right' : 'left', borderBottom: `1px solid ${th.theadBorder}` }}>{h}</th>
                   ))}
+                  <th style={{ padding: '12px 20px', borderBottom: `1px solid ${th.theadBorder}` }} />
                 </tr>
               </thead>
               <tbody>
@@ -664,6 +753,12 @@ function RestaurantsTab({ th }: { th: Th }) {
                       <button onClick={() => handleDelete(r)} disabled={deleting === r.id}
                         style={{ padding: '8px 10px', borderRadius: 10, background: th.dark ? 'rgba(252,165,165,.1)' : '#FEF2F2', color: th.dark ? '#FCA5A5' : '#EF4444', border: 'none', cursor: 'pointer' }}>
                         {deleting === r.id ? <Loader2 size={16} style={{ animation: 'spin .8s linear infinite' }} /> : <Trash2 size={16} />}
+                      </button>
+                    </td>
+                    <td style={{ padding: '16px 12px 16px 0' }}>
+                      <button onClick={() => openEdit(r)}
+                        style={{ padding: '8px 10px', borderRadius: 10, background: th.dark ? 'rgba(167,139,250,.1)' : th.accentSoft, color: th.accent, border: 'none', cursor: 'pointer' }}>
+                        <Pencil size={16} />
                       </button>
                     </td>
                   </tr>

@@ -1,4 +1,5 @@
-import { createAdminClient } from '@/lib/supabase/server'
+import { createAdminClient, createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 import { Users, Utensils, CreditCard, TrendingUp } from 'lucide-react'
 import VisitsChart from '@/components/dashboard/VisitsChart'
 import AppShell from '@/components/dashboard/AppShell'
@@ -9,12 +10,15 @@ function fmt(n: number) {
 }
 
 export default async function DashboardPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/')
+
   const admin = await createAdminClient()
 
   const { data: restaurant } = await (admin.from('restaurants') as any)
     .select('id, name')
-    .order('created_at', { ascending: true })
-    .limit(1)
+    .eq('owner_id', user.id)
     .single()
 
   if (!restaurant) return <div className="p-8 text-gray-500">Aucun restaurant trouvé.</div>

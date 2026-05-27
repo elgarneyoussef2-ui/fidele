@@ -94,6 +94,29 @@ export async function POST(req: NextRequest) {
   }
 }
 
+// PATCH — update restaurant email and/or password
+export async function PATCH(req: NextRequest) {
+  if (!requireAdmin(req)) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+
+  try {
+    const { userId, email, password } = await req.json()
+    if (!userId) return NextResponse.json({ error: 'userId requis' }, { status: 400 })
+    if (!email && !password) return NextResponse.json({ error: 'Email ou mot de passe requis' }, { status: 400 })
+
+    const sb = adminSupabase()
+    const updates: { email?: string; password?: string } = {}
+    if (email)    updates.email    = email
+    if (password) updates.password = password
+
+    const { error } = await sb.auth.admin.updateUserById(userId, updates)
+    if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+
+    return NextResponse.json({ ok: true })
+  } catch (e: any) {
+    return NextResponse.json({ error: e.message }, { status: 500 })
+  }
+}
+
 // DELETE — remove restaurant + auth user
 export async function DELETE(req: NextRequest) {
   if (!requireAdmin(req)) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
