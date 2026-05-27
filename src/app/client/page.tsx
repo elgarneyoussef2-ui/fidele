@@ -987,12 +987,12 @@ export default function ClientApp() {
     if (installPrompt) {
       installPrompt.prompt()
       installPrompt.userChoice.then(() => setInstallPrompt(null))
-    } else if (platform === 'ios') {
+    } else {
       setShowInstallSheet(true)
     }
   }
 
-  const showInstallBanner = !standalone && (!!installPrompt || platform === 'ios')
+  const showInstallBanner = !standalone && (!!installPrompt || platform === 'ios' || platform === 'android')
 
   if (loading) return <><style>{CSS}</style><Spinner /></>
 
