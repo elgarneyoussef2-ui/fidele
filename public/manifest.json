@@ -1,0 +1,27 @@
+{
+  "name": "Fidèle Staff",
+  "short_name": "Fidèle",
+  "description": "Générez des QR codes et gérez les demandes de récompenses clients.",
+  "start_url": "/staff",
+  "scope": "/staff",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#15101F",
+  "theme_color": "#15101F",
+  "lang": "fr",
+  "categories": ["business", "utilities"],
+  "icons": [
+    {
+      "src": "/staff-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/staff-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
