@@ -10,7 +10,7 @@ type Visit = { id?: string; amount_paid: number; points_earned: number; created_
 type Client = {
   id: string; restaurant_id: string; name: string; phone: string
   points_balance: number; total_visits: number; last_visit_at: string | null
-  restaurants: { id: string; name: string }
+  restaurants: { id: string; name: string; description?: string | null; logo_url?: string | null; cover_url?: string | null; accent_color?: string | null }
   visits: Visit[]
 }
 type Reward = { id: string; name: string; description: string; points_cost: number }
@@ -395,10 +395,14 @@ function RestoCard({ client, onClick }: { client: Client; onClick: () => void })
 function DetailScreen({ client, clientName, onBack }: {
   client: Client; clientName: string; onBack: () => void
 }) {
-  const tier = tierFor(client.points_balance)
-  const prog = tierProgress(client.points_balance)
-  const rName = client.restaurants?.name ?? '—'
-  const pts = client.points_balance || 0
+  const tier    = tierFor(client.points_balance)
+  const prog    = tierProgress(client.points_balance)
+  const rName   = client.restaurants?.name ?? '—'
+  const pts     = client.points_balance || 0
+  const accent  = client.restaurants?.accent_color ?? '#15101F'
+  const logoUrl = client.restaurants?.logo_url
+  const coverUrl = client.restaurants?.cover_url
+  const desc    = client.restaurants?.description
 
   const [rewards, setRewards] = useState<Reward[]>([])
   const [rewardsLoaded, setRewardsLoaded] = useState(false)
@@ -442,22 +446,49 @@ function DetailScreen({ client, clientName, onBack }: {
   return (
     <div>
       {/* Hero */}
-      <div style={{ background: 'linear-gradient(160deg,#15101F 0%,#2A2236 100%)', padding: '24px 24px 32px', color: '#fff' }}>
-        <button onClick={onBack} style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,.1)', border: '1px solid rgba(255,255,255,.15)', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
-          <IconBack />
-        </button>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 24, marginBottom: 28 }}>
-          <div style={{ width: 64, height: 64, borderRadius: 20, background: 'rgba(255,255,255,.1)', border: '1px solid rgba(255,255,255,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 32, flexShrink: 0 }}>
-            {rName[0]?.toUpperCase()}
-          </div>
-          <div>
-            <h2 style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-.02em' }}>{rName}</h2>
-            <p className="eyebrow" style={{ fontSize: 10, color: 'rgba(255,255,255,.5)', marginTop: 4 }}>
-              {client.total_visits ?? 0} visite{(client.total_visits ?? 0) > 1 ? 's' : ''}
-            </p>
-          </div>
+      <div style={{ color: '#fff', position: 'relative' }}>
+        {/* Cover */}
+        <div style={{
+          height: coverUrl ? 180 : 120,
+          background: coverUrl
+            ? `url(${coverUrl}) center/cover no-repeat`
+            : `linear-gradient(160deg, ${accent} 0%, ${accent}cc 100%)`,
+          position: 'relative',
+        }}>
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.35)' }} />
+          <button onClick={onBack} style={{ position: 'absolute', top: 16, left: 16, width: 40, height: 40, borderRadius: '50%', background: 'rgba(0,0,0,.3)', border: '1px solid rgba(255,255,255,.2)', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
+            <IconBack />
+          </button>
         </div>
+
+        {/* Identity row */}
+        <div style={{ background: '#15101F', padding: '0 24px 24px', position: 'relative' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16, transform: 'translateY(-28px)' }}>
+            <div style={{
+              width: 64, height: 64, borderRadius: 20, flexShrink: 0, overflow: 'hidden',
+              border: '3px solid #15101F', boxShadow: '0 4px 16px rgba(0,0,0,.3)',
+              background: logoUrl ? '#fff' : `${accent}33`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 28, fontWeight: 700, color: '#fff',
+              marginTop: -28,
+            }}>
+              {logoUrl
+                ? <img src={logoUrl} alt={rName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : rName[0]?.toUpperCase()}
+            </div>
+            <div style={{ paddingBottom: 4 }}>
+              <h2 style={{ fontSize: 24, fontWeight: 800, letterSpacing: '-.02em', color: '#fff' }}>{rName}</h2>
+              <p className="eyebrow" style={{ fontSize: 10, color: 'rgba(255,255,255,.45)', marginTop: 2 }}>
+                {client.total_visits ?? 0} visite{(client.total_visits ?? 0) > 1 ? 's' : ''}
+              </p>
+            </div>
+          </div>
+          {desc && (
+            <p style={{ fontSize: 13, color: 'rgba(255,255,255,.5)', lineHeight: 1.6, marginTop: 14, fontWeight: 400 }}>{desc}</p>
+          )}
+        </div>
+
+        <div style={{ background: '#15101F', padding: '0 24px 32px' }}>
 
         {/* Balance card */}
         <div style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 24, padding: '24px', boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}>
@@ -479,6 +510,7 @@ function DetailScreen({ client, clientName, onBack }: {
               ? <>Encore <strong className="num-mono" style={{ color: '#fff' }}>{prog.toNext} pts</strong> pour atteindre <strong style={{ color: '#E9A23B' }}>{prog.next.name}</strong></>
               : 'Vous êtes au palier maximum ✨'}
           </p>
+        </div>
         </div>
       </div>
 

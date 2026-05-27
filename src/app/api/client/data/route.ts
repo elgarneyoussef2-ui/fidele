@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
   // All client records for this phone (one per restaurant)
   const { data: clients, error } = await sb
     .from('clients')
-    .select('*, restaurants(id, name)')
+    .select('*, restaurants(id, name, description, logo_url, cover_url, accent_color)')
     .eq('phone', phone)
     .order('points_balance', { ascending: false })
 
