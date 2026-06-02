@@ -5,14 +5,26 @@ import { NextResponse } from 'next/server'
 
 let limiter: Ratelimit | null = null
 
+// Nettoie une variable d'env : supprime les guillemets et espaces parasites
+function cleanEnv(value: string | undefined): string {
+  return (value ?? '').trim().replace(/^["']|["']$/g, '')
+}
+
 function getLimiter(): Ratelimit | null {
-  if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) return null
+  const url   = cleanEnv(process.env.UPSTASH_REDIS_REST_URL)
+  const token = cleanEnv(process.env.UPSTASH_REDIS_REST_TOKEN)
+  if (!url || !token) return null
+
   if (!limiter) {
-    limiter = new Ratelimit({
-      redis:     Redis.fromEnv(),
-      limiter:   Ratelimit.slidingWindow(10, '60 s'),
-      analytics: false,
-    })
+    try {
+      limiter = new Ratelimit({
+        redis:     new Redis({ url, token }),
+        limiter:   Ratelimit.slidingWindow(10, '60 s'),
+        analytics: false,
+      })
+    } catch {
+      return null
+    }
   }
   return limiter
 }
@@ -38,7 +50,6 @@ export async function rateLimit(req: NextRequest): Promise<NextResponse | null> 
     }
     return null
   } catch {
-    // Redis indisponible → on laisse passer plutôt que de bloquer tout le service
     return null
   }
 }
