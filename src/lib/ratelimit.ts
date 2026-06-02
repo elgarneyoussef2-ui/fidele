@@ -17,22 +17,28 @@ function getLimiter(): Ratelimit | null {
   return limiter
 }
 
-/** Returns a 429 response if the IP is over limit, null otherwise. */
+/** Retourne une réponse 429 si l'IP dépasse la limite, null sinon.
+ *  En cas d'erreur Redis, laisse passer (fail open) pour ne pas bloquer l'app. */
 export async function rateLimit(req: NextRequest): Promise<NextResponse | null> {
   const rl = getLimiter()
-  if (!rl) return null // Upstash not configured → allow
+  if (!rl) return null
 
   const ip =
     req.headers.get('x-forwarded-for')?.split(',')[0].trim() ??
     req.headers.get('x-real-ip') ??
     'unknown'
 
-  const { success, remaining } = await rl.limit(ip)
-  if (!success) {
-    return NextResponse.json(
-      { error: 'Trop de tentatives. Réessayez dans une minute.' },
-      { status: 429, headers: { 'X-RateLimit-Remaining': String(remaining) } }
-    )
+  try {
+    const { success, remaining } = await rl.limit(ip)
+    if (!success) {
+      return NextResponse.json(
+        { error: 'Trop de tentatives. Réessayez dans une minute.' },
+        { status: 429, headers: { 'X-RateLimit-Remaining': String(remaining) } }
+      )
+    }
+    return null
+  } catch {
+    // Redis indisponible → on laisse passer plutôt que de bloquer tout le service
+    return null
   }
-  return null
 }
