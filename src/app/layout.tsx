@@ -24,6 +24,8 @@ const jetbrainsMono = JetBrains_Mono({
   display: 'swap',
 })
 
+const APP_URL = 'https://fidele-steel.vercel.app'
+
 export const metadata: Metadata = {
   title: 'Fidèle — Programme de fidélité pour restaurants marocains',
   description:
@@ -34,7 +36,7 @@ export const metadata: Metadata = {
   openGraph: {
     type:        'website',
     locale:      'fr_FR',
-    url:         process.env.NEXT_PUBLIC_APP_URL ?? 'https://fidele-steel.vercel.app',
+    url:         APP_URL,
     siteName:    'Fidèle',
     title:       'Fidèle — Programme de fidélité pour restaurants marocains',
     description: 'Fidèle transforme chaque repas en relation durable. Points, récompenses et analytics pour fidéliser vos clients.',
@@ -44,7 +46,7 @@ export const metadata: Metadata = {
     title:       'Fidèle — Programme de fidélité pour restaurants marocains',
     description: 'Points, récompenses et analytics pour fidéliser les clients de votre restaurant.',
   },
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? 'https://fidele-steel.vercel.app'),
+  metadataBase: new URL(APP_URL),
 }
 
 export default function RootLayout({
