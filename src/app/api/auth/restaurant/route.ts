@@ -20,33 +20,40 @@ function adminClient() {
 }
 
 export async function POST(req: NextRequest) {
-  const limited = await rateLimit(req)
-  if (limited) return limited
+  try {
+    const limited = await rateLimit(req)
+    if (limited) return limited
 
-  const { email, password } = await req.json()
-  if (!email || !password) {
-    return NextResponse.json({ error: 'Email et mot de passe requis.' }, { status: 400 })
+    const body = await req.json().catch(() => ({}))
+    const { email, password } = body
+    if (!email || !password) {
+      return NextResponse.json({ error: 'Email et mot de passe requis.' }, { status: 400 })
+    }
+
+    const { data: authData, error } = await anonClient().auth.signInWithPassword({ email, password })
+    if (error || !authData.user) {
+      return NextResponse.json({ error: 'Identifiants incorrects.' }, { status: 401 })
+    }
+
+    const { data: restaurant } = await adminClient()
+      .from('restaurants')
+      .select('id')
+      .eq('owner_id', authData.user.id)
+      .single()
+
+    if (!restaurant) {
+      return NextResponse.json({ error: 'Aucun restaurant associé à ce compte.' }, { status: 404 })
+    }
+
+    const jwt = await signRestaurantSession(restaurant.id)
+    const response = NextResponse.json({ ok: true })
+    response.cookies.set(RESTAURANT_COOKIE, jwt, COOKIE_OPTS)
+    return response
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Erreur interne'
+    console.error('[POST /api/auth/restaurant]', message)
+    return NextResponse.json({ error: message }, { status: 500 })
   }
-
-  const { data: authData, error } = await anonClient().auth.signInWithPassword({ email, password })
-  if (error || !authData.user) {
-    return NextResponse.json({ error: 'Identifiants incorrects.' }, { status: 401 })
-  }
-
-  const { data: restaurant } = await adminClient()
-    .from('restaurants')
-    .select('id')
-    .eq('owner_id', authData.user.id)
-    .single()
-
-  if (!restaurant) {
-    return NextResponse.json({ error: 'Aucun restaurant associé à ce compte.' }, { status: 404 })
-  }
-
-  const jwt = await signRestaurantSession(restaurant.id)
-  const response = NextResponse.json({ ok: true })
-  response.cookies.set(RESTAURANT_COOKIE, jwt, COOKIE_OPTS)
-  return response
 }
 
 export async function DELETE() {
