@@ -4,21 +4,25 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { getRestaurantId } from '@/lib/session'
 
+// Transforme les colonnes DB (is_active, points_required) vers les noms frontend (active, points_cost)
+function toFrontend(row: Record<string, unknown>) {
+  return { ...row, active: row.is_active, points_cost: row.points_required }
+}
+
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url)
-  const restaurantId = searchParams.get('restaurantId')
+  const restaurantId = await getRestaurantId(req)
+  if (!restaurantId) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+
   const admin = await createAdminClient()
 
-  let query = (admin.from('rewards') as any)
+  const { data, error } = await (admin.from('rewards') as any)
     .select('*')
-    .eq('active', true)
-    .order('points_cost', { ascending: true })
+    .eq('restaurant_id', restaurantId)
+    .eq('is_active', true)
+    .order('points_required', { ascending: true })
 
-  if (restaurantId) query = query.eq('restaurant_id', restaurantId)
-
-  const { data, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(data ?? [])
+  return NextResponse.json((data ?? []).map(toFrontend))
 }
 
 export async function POST(req: NextRequest) {
@@ -27,13 +31,21 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json()
   const { name, description, points_cost, active } = body
-  if (!name || !points_cost) return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
+  if (!name || !points_cost)
+    return NextResponse.json({ error: 'Champs manquants (name, points_cost)' }, { status: 400 })
 
   const admin = await createAdminClient()
   const { data, error } = await (admin.from('rewards') as any)
-    .insert({ restaurant_id: restaurantId, name, description: description ?? '', points_cost: Number(points_cost), active: active ?? true })
-    .select().single()
+    .insert({
+      restaurant_id:   restaurantId,
+      name,
+      description:     description ?? '',
+      points_required: Number(points_cost),
+      is_active:       active ?? true,
+    })
+    .select()
+    .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(data)
+  return NextResponse.json(toFrontend(data))
 }

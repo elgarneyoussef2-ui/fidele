@@ -24,7 +24,7 @@ const JT = {
     install_ios:     'Appuyez sur',
     install_ios2:    'puis « Sur l\'écran d\'accueil »',
     loyalty_points: 'Points Fidélité',
-    receive_pts:    (pts: number, rName: string) => `Recevez ${pts} point${pts > 1 ? 's' : ''} chez ${rName}.`,
+    receive_pts:    (amount: number, rName: string) => `Votre commande de ${amount} MAD chez ${rName}.`,
     enter_password: 'Entrez votre mot de passe pour valider.',
     create_account: 'Créez votre compte pour recevoir vos points.',
     bravo:          (name: string) => `Bravo, ${name} !`,
@@ -54,7 +54,7 @@ const JT = {
     install_ios:     'اضغط على',
     install_ios2:    'ثم « إضافة إلى الشاشة الرئيسية »',
     loyalty_points: 'نقاط الولاء',
-    receive_pts:    (pts: number, rName: string) => `احصل على ${pts} نقطة في ${rName}.`,
+    receive_pts:    (amount: number, rName: string) => `طلبك بقيمة ${amount} درهم في ${rName}.`,
     enter_password: 'أدخل كلمة مرورك للتأكيد.',
     create_account: 'أنشئ حسابك لاستلام نقاطك.',
     bravo:          (name: string) => `أحسنت، ${name}!`,
@@ -80,7 +80,6 @@ const JT = {
 }
 
 export default function JoinForm({ token, restaurantId, restaurantName, amount }: Props) {
-  const pts = Math.floor(amount / 10)
 
   const [lang, setLang] = useState<Lang>('fr')
   const jt = JT[lang]
@@ -321,7 +320,7 @@ export default function JoinForm({ token, restaurantId, restaurantName, amount }
           <div className="space-y-2">
             <CardTitle className="text-3xl font-bold text-foreground">{jt.loyalty_points}</CardTitle>
             <CardDescription className="text-base text-muted-foreground">
-              {step === 'phone'    && jt.receive_pts(pts, restaurantName)}
+              {step === 'phone'    && jt.receive_pts(amount, restaurantName)}
               {step === 'password' && jt.enter_password}
               {step === 'register' && jt.create_account}
             </CardDescription>

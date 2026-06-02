@@ -8,6 +8,7 @@ export default async function JoinPage({ searchParams }: { searchParams: { token
 
   const tokenData = await getTokenData(token)
   if (!tokenData) return <ErrorPage message="QR code introuvable." sub="Ce QR code n'existe pas ou a expiré." />
+  if (tokenData.expired) return <ErrorPage message="QR code expiré." sub="Ce QR code est valable 15 minutes seulement. Demandez au serveur d'en générer un nouveau." />
   if (tokenData.used_at) return <ErrorPage message="QR déjà utilisé." sub="Ce QR code a déjà été scanné. Demandez un nouveau QR au serveur." />
 
   return (

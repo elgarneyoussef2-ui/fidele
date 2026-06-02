@@ -3,13 +3,26 @@
 import { createAdminClient } from '@/lib/supabase/server'
 import { hashPassword } from '@/lib/password'
 
+const QR_EXPIRY_MINUTES = 15
+
 export async function getTokenData(token: string) {
   const admin = await createAdminClient()
   const { data } = await (admin.from('qr_tokens') as any)
-    .select('id, amount, used_at, restaurant_id, restaurants(name)')
+    .select('id, amount, used_at, created_at, restaurant_id, restaurants(name)')
     .eq('id', token)
     .single()
-  return data as { id: string; amount: number; used_at: string | null; restaurant_id: string; restaurants: { name: string } } | null
+
+  if (!data) return null
+
+  // Vérifier l'expiration temporelle (15 minutes)
+  const createdAt  = new Date(data.created_at as string)
+  const expiresAt  = new Date(createdAt.getTime() + QR_EXPIRY_MINUTES * 60 * 1000)
+  const isExpired  = new Date() > expiresAt
+
+  return {
+    ...(data as { id: string; amount: number; used_at: string | null; created_at: string; restaurant_id: string; restaurants: { name: string } }),
+    expired: isExpired,
+  }
 }
 
 export async function processJoinWithToken(input: { token: string; phone: string; name: string; password?: string }) {
@@ -22,11 +35,17 @@ export async function processJoinWithToken(input: { token: string; phone: string
   if (!qrToken) return { success: false, error: 'QR invalide' }
   if (qrToken.used_at) return { success: false, error: 'QR déjà utilisé' }
 
-  const restaurantId = qrToken.restaurant_id
+  // Vérifier expiration 15 min
+  const createdAt = new Date(qrToken.created_at as string)
+  const expiresAt = new Date(createdAt.getTime() + QR_EXPIRY_MINUTES * 60 * 1000)
+  if (new Date() > expiresAt)
+    return { success: false, error: 'Ce QR code a expiré. Demandez-en un nouveau au serveur.' }
+
+  const restaurantId = qrToken.restaurant_id as string
   const amount       = Number(qrToken.amount)
 
   try {
-    // Get restaurant config (expiry + points ratio)
+    // Récupérer la config du restaurant (expiry + ratio points)
     const { data: resto } = await (admin.from('restaurants') as any)
       .select('points_expiry_months, mad_per_point').eq('id', restaurantId).single()
     const expiryMonths: number | null = resto?.points_expiry_months ?? null
@@ -39,8 +58,17 @@ export async function processJoinWithToken(input: { token: string; phone: string
     if (!existing) {
       const passwordHash = password ? await hashPassword(password) : null
       const { data: newClient, error: ce } = await (admin.from('clients') as any)
-        .insert({ restaurant_id: restaurantId, name, phone, points_balance: 0, total_visits: 0, total_spent: 0, password_hash: passwordHash })
-        .select().single()
+        .insert({
+          restaurant_id: restaurantId,
+          name,
+          phone,
+          points_balance: 0,
+          total_visits:   0,
+          total_spent:    0,
+          password_hash:  passwordHash,
+        })
+        .select()
+        .single()
       if (ce) throw ce
       currentClient = newClient
     }
@@ -49,18 +77,20 @@ export async function processJoinWithToken(input: { token: string; phone: string
     const oldBalance     = Number(currentClient.points_balance) || 0
     const updatedBalance = oldBalance + pointsToEarn
 
-    // Calculate expires_at for this visit
-    let expiresAt: string | null = null
+    // Calculer expires_at pour cette visite
+    let visitExpiresAt: string | null = null
     if (expiryMonths) {
       const d = new Date()
       d.setMonth(d.getMonth() + expiryMonths)
-      expiresAt = d.toISOString()
+      visitExpiresAt = d.toISOString()
     }
 
     const { error: ve } = await (admin.from('visits') as any).insert({
-      client_id: currentClient.id, restaurant_id: restaurantId,
-      amount_paid: amount, points_earned: pointsToEarn,
-      expires_at: expiresAt,
+      client_id:      currentClient.id,
+      restaurant_id:  restaurantId,
+      amount_paid:    amount,
+      points_earned:  pointsToEarn,
+      expires_at:     visitExpiresAt,
     })
     if (ve) throw ve
 
@@ -71,12 +101,17 @@ export async function processJoinWithToken(input: { token: string; phone: string
       last_visit_at:  new Date().toISOString(),
     }).eq('id', currentClient.id)
 
-    // Mark token as used
+    // Marquer le token comme utilisé
     await (admin.from('qr_tokens') as any)
       .update({ used_at: new Date().toISOString() }).eq('id', token)
 
-    return { success: true, pointsEarned: pointsToEarn, newBalance: updatedBalance, name: currentClient.name }
-  } catch (err: any) {
-    return { success: false, error: err.message }
+    return {
+      success:      true,
+      pointsEarned: pointsToEarn,
+      newBalance:   updatedBalance,
+      name:         currentClient.name as string,
+    }
+  } catch (err: unknown) {
+    return { success: false, error: err instanceof Error ? err.message : 'Erreur inconnue' }
   }
 }
