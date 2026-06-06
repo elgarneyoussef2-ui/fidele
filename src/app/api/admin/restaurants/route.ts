@@ -5,7 +5,7 @@ const _SB_URL   = (process.env.NEXT_PUBLIC_SUPABASE_URL  ?? '').trim().replace(/
 const _SB_ADMIN = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? '').trim().replace(/^["']|["']$/g, '')
 
 function adminSupabase() {
-  return createClient(_SB_URL, _SB_ADMIN, { auth: { autoRefreshTarget: false, persistSession: false } })
+  return createClient(_SB_URL, _SB_ADMIN, { auth: { autoRefreshToken: false, persistSession: false } })
 }
 
 function requireAdmin(req: NextRequest) {
