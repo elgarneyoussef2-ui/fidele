@@ -8,7 +8,7 @@ import {
   User, Lock, Plus, Bell,
 } from 'lucide-react'
 
-type Staff  = { id: string; name: string; role: string }
+type Staff  = { id: string; name: string; role: string; restaurantId?: string }
 type Demand = { id: string; client_name: string; reward_name: string; reward_points: number; created_at: string }
 
 const CSS = `
@@ -99,7 +99,7 @@ function LoginScreen({ onLogin }: { onLogin: (s: Staff) => void }) {
 
 // ── QR Tab ────────────────────────────────────────────────────────────────────
 
-function QRTab() {
+function QRTab({ staffId }: { staffId: string }) {
   const [amount,      setAmount]      = useState('')
   const [qrDataUrl,   setQrDataUrl]   = useState('')
   const [loading,     setLoading]     = useState(false)
@@ -118,7 +118,7 @@ function QRTab() {
     if (amountNum <= 0) return
     setLoading(true); setQrDataUrl('')
     try {
-      const res  = await fetch('/api/qr-tokens', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amount: amountNum }) })
+      const res  = await fetch('/api/qr-tokens', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amount: amountNum, staffId }) })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
       const url     = `${window.location.origin}/join?token=${data.id}`
@@ -449,7 +449,7 @@ export default function StaffPage() {
 
         {/* Content */}
         <div style={{ flex: 1, padding: '18px 16px 32px', overflowY: 'auto', maxWidth: 560, width: '100%', margin: '0 auto' }}>
-          {tab === 'qr'      && <QRTab />}
+          {tab === 'qr'      && <QRTab staffId={staff.id} />}
           {tab === 'demands' && <DemandsTab onCountChange={n => { prevBadge.current = n; setBadge(n) }} />}
         </div>
 

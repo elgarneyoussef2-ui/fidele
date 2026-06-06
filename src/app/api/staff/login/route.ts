@@ -41,5 +41,5 @@ export async function POST(req: NextRequest) {
     await (admin.from('staff') as any).update({ password_hash: upgraded }).eq('id', member.id)
   }
 
-  return NextResponse.json({ id: member.id, name: member.name, role: member.role })
+  return NextResponse.json({ id: member.id, name: member.name, role: member.role, restaurantId: targetRestaurantId })
 }
