@@ -1,8 +1,9 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-const _SB_URL   = (process.env.NEXT_PUBLIC_SUPABASE_URL  ?? '').trim().replace(/^["']|["']$/g, '')
-const _SB_ADMIN = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? '').trim().replace(/^["']|["']$/g, '')
+function _extractUrl(r: string | undefined) { const m = (r ?? '').match(/https?:\/\/[^\s"'"'`]+/); return m ? m[0] : (r ?? '').trim() }
+const _SB_URL   = _extractUrl(process.env.NEXT_PUBLIC_SUPABASE_URL)
+const _SB_ADMIN = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? '').trim().replace(/^["'"'`\s]+|["'"'`\s]+$/g, '')
 
 function adminSupabase() {
   return createClient(_SB_URL, _SB_ADMIN, { auth: { autoRefreshToken: false, persistSession: false } })

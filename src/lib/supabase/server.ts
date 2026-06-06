@@ -2,10 +2,19 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import type { Database } from './types'
 
-// Notation dotée obligatoire pour que Next.js puisse inliner les NEXT_PUBLIC_*
-const SB_URL   = (process.env.NEXT_PUBLIC_SUPABASE_URL  ?? '').trim().replace(/^["']|["']$/g, '')
-const SB_ANON  = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '').trim().replace(/^["']|["']$/g, '')
-const SB_ADMIN = (process.env.SUPABASE_SERVICE_ROLE_KEY  ?? '').trim().replace(/^["']|["']$/g, '')
+function extractUrl(raw: string | undefined): string {
+  if (!raw) return ''
+  const match = raw.match(/https?:\/\/[^\s"'"'`]+/)
+  return match ? match[0] : raw.trim()
+}
+
+function cleanKey(raw: string | undefined): string {
+  return (raw ?? '').trim().replace(/^["'"'`\s]+|["'"'`\s]+$/g, '')
+}
+
+const SB_URL   = extractUrl(process.env.NEXT_PUBLIC_SUPABASE_URL)
+const SB_ANON  = cleanKey(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+const SB_ADMIN = cleanKey(process.env.SUPABASE_SERVICE_ROLE_KEY)
 
 function cookieHandlers() {
   const cookieStore = cookies()
