@@ -3,11 +3,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { signRestaurantSession, RESTAURANT_COOKIE, COOKIE_OPTS } from '@/lib/session'
 import { rateLimit } from '@/lib/ratelimit'
 
-// Utilise la notation dotée (process.env.KEY) que Next.js peut inliner,
-// puis nettoie les guillemets parasites
-const SB_URL   = (process.env.NEXT_PUBLIC_SUPABASE_URL  ?? '').trim().replace(/^["']|["']$/g, '')
-const SB_ANON  = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '').trim().replace(/^["']|["']$/g, '')
-const SB_ADMIN = (process.env.SUPABASE_SERVICE_ROLE_KEY  ?? '').trim().replace(/^["']|["']$/g, '')
+// DEBUG TEMPORAIRE — à supprimer après diagnostic
+const RAW_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '__UNDEFINED__'
+console.log('[ENV DEBUG] NEXT_PUBLIC_SUPABASE_URL raw:', JSON.stringify(RAW_URL))
+
+const SB_URL   = RAW_URL.trim().replace(/^["']+|["']+$/g, '')
+const SB_ANON  = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '').trim().replace(/^["']+|["']+$/g, '')
+const SB_ADMIN = (process.env.SUPABASE_SERVICE_ROLE_KEY  ?? '').trim().replace(/^["']+|["']+$/g, '')
 
 function anonClient() {
   return createClient(SB_URL, SB_ANON, { auth: { persistSession: false, autoRefreshToken: false } })
