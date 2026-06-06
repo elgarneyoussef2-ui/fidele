@@ -5,12 +5,11 @@ import { createClient } from '@supabase/supabase-js'
 import { verifyPassword, hashPassword } from '@/lib/password'
 import { rateLimit } from '@/lib/ratelimit'
 
+const _SB_URL   = (process.env.NEXT_PUBLIC_SUPABASE_URL  ?? '').trim().replace(/^["']|["']$/g, '')
+const _SB_ADMIN = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? '').trim().replace(/^["']|["']$/g, '')
+
 function adminSupabase() {
-  return createClient(
-    ((process.env["NEXT_PUBLIC_SUPABASE_URL"] ?? "").trim().replace(/^["']|["']$/g, "")),
-    ((process.env["SUPABASE_SERVICE_ROLE_KEY"] ?? "").trim().replace(/^["']|["']$/g, "")),
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  )
+  return createClient(_SB_URL, _SB_ADMIN, { auth: { autoRefreshToken: false, persistSession: false } })
 }
 
 // POST /api/client/login  { phone, password }
