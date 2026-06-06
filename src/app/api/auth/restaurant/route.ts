@@ -3,12 +3,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { signRestaurantSession, RESTAURANT_COOKIE, COOKIE_OPTS } from '@/lib/session'
 import { rateLimit } from '@/lib/ratelimit'
 
-// Extrait une URL https:// valide depuis une valeur d'env qui peut avoir des guillemets
+// URL publique Supabase — NEXT_PUBLIC_ signifie qu'elle est destinée à être publique
+const SUPABASE_URL = 'https://sxebhrnvynkfpwssevqi.supabase.co'
+
 function extractUrl(raw: string | undefined): string {
-  if (!raw) return ''
-  // Extraire directement l'URL https:// depuis la chaîne, quelle que soit l'entourage
+  if (!raw) return SUPABASE_URL
   const match = raw.match(/https?:\/\/[^\s"'"'`]+/)
-  return match ? match[0] : raw.trim()
+  return match ? match[0] : SUPABASE_URL
 }
 
 function cleanKey(raw: string | undefined): string {

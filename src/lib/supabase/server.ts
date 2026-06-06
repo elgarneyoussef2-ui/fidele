@@ -2,10 +2,12 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import type { Database } from './types'
 
+const SUPABASE_URL = 'https://sxebhrnvynkfpwssevqi.supabase.co'
+
 function extractUrl(raw: string | undefined): string {
-  if (!raw) return ''
+  if (!raw) return SUPABASE_URL
   const match = raw.match(/https?:\/\/[^\s"'"'`]+/)
-  return match ? match[0] : raw.trim()
+  return match ? match[0] : SUPABASE_URL
 }
 
 function cleanKey(raw: string | undefined): string {

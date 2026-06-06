@@ -3,7 +3,8 @@ import { createClient } from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
 
-function _extractUrl(r: string | undefined) { const m = (r ?? '').match(/https?:\/\/[^\s"'"'`]+/); return m ? m[0] : (r ?? '').trim() }
+const _SB_FB = 'https://sxebhrnvynkfpwssevqi.supabase.co'
+function _extractUrl(r: string | undefined) { const m = (r ?? '').match(/https?:\/\/[^\s"'"'`]+/); return m ? m[0] : _SB_FB }
 const _SB_URL   = _extractUrl(process.env.NEXT_PUBLIC_SUPABASE_URL)
 const _SB_ADMIN = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? '').trim().replace(/^["'"'`\s]+|["'"'`\s]+$/g, '')
 
