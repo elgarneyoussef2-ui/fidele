@@ -3,18 +3,22 @@ import { NextRequest, NextResponse } from 'next/server'
 import { signRestaurantSession, RESTAURANT_COOKIE, COOKIE_OPTS } from '@/lib/session'
 import { rateLimit } from '@/lib/ratelimit'
 
+function clean(key: string) {
+  return (process.env[key] ?? '').trim().replace(/^["']|["']$/g, '')
+}
+
 function anonClient() {
   return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    clean('NEXT_PUBLIC_SUPABASE_URL'),
+    clean('NEXT_PUBLIC_SUPABASE_ANON_KEY'),
     { auth: { persistSession: false, autoRefreshToken: false } }
   )
 }
 
 function adminClient() {
   return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    clean('NEXT_PUBLIC_SUPABASE_URL'),
+    clean('SUPABASE_SERVICE_ROLE_KEY'),
     { auth: { persistSession: false, autoRefreshToken: false } }
   )
 }

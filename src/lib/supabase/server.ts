@@ -2,48 +2,37 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import type { Database } from './types'
 
-export async function createClient() {
-  const cookieStore = cookies()
+// Nettoie les variables d'env : supprime guillemets et espaces parasites
+function e(key: string): string {
+  return (process.env[key] ?? '').trim().replace(/^["']|["']$/g, '')
+}
 
+const cookieHandlers = () => {
+  const cookieStore = cookies()
+  return {
+    getAll() { return cookieStore.getAll() },
+    setAll(cookiesToSet: { name: string; value: string; options?: object }[]) {
+      try {
+        cookiesToSet.forEach(({ name, value, options }) =>
+          cookieStore.set(name, value, options)
+        )
+      } catch { }
+    },
+  }
+}
+
+export async function createClient() {
   return createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll()
-        },
-        setAll(cookiesToSet: any[]) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }: any) =>
-              cookieStore.set(name, value, options)
-            )
-          } catch { }
-        },
-      },
-    }
+    e('NEXT_PUBLIC_SUPABASE_URL'),
+    e('NEXT_PUBLIC_SUPABASE_ANON_KEY'),
+    { cookies: cookieHandlers() }
   )
 }
 
 export async function createAdminClient() {
-  const cookieStore = cookies()
-
   return createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll()
-        },
-        setAll(cookiesToSet: any[]) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }: any) =>
-              cookieStore.set(name, value, options)
-            )
-          } catch { }
-        },
-      },
-    }
+    e('NEXT_PUBLIC_SUPABASE_URL'),
+    e('SUPABASE_SERVICE_ROLE_KEY'),
+    { cookies: cookieHandlers() }
   )
 }
