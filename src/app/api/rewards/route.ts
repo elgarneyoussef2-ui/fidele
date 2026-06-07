@@ -4,10 +4,7 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { getRestaurantId } from '@/lib/session'
 
-// Transforme les colonnes DB (is_active, points_required) vers les noms frontend (active, points_cost)
-function toFrontend(row: Record<string, unknown>) {
-  return { ...row, active: row.is_active, points_cost: row.points_required }
-}
+// Colonnes DB réelles : active, points_cost (confirmé par introspection)
 
 export async function GET(req: NextRequest) {
   const restaurantId = await getRestaurantId(req)
@@ -18,11 +15,11 @@ export async function GET(req: NextRequest) {
   const { data, error } = await (admin.from('rewards') as any)
     .select('*')
     .eq('restaurant_id', restaurantId)
-    .eq('is_active', true)
-    .order('points_required', { ascending: true })
+    .eq('active', true)
+    .order('points_cost', { ascending: true })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json((data ?? []).map(toFrontend))
+  return NextResponse.json(data ?? [])
 }
 
 export async function POST(req: NextRequest) {
@@ -37,15 +34,15 @@ export async function POST(req: NextRequest) {
   const admin = await createAdminClient()
   const { data, error } = await (admin.from('rewards') as any)
     .insert({
-      restaurant_id:   restaurantId,
+      restaurant_id: restaurantId,
       name,
-      description:     description ?? '',
-      points_required: Number(points_cost),
-      is_active:       active ?? true,
+      description:   description ?? '',
+      points_cost:   Number(points_cost),
+      active:        active ?? true,
     })
     .select()
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(toFrontend(data))
+  return NextResponse.json(data)
 }

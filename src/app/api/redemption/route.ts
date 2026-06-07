@@ -35,14 +35,14 @@ export async function POST(req: NextRequest) {
 
   // Vérifier que la récompense appartient au même restaurant que le client
   const { data: reward } = await (admin.from('rewards') as any)
-    .select('id, restaurant_id, points_required, is_active')
+    .select('id, restaurant_id, points_cost, active')
     .eq('id', rewardId)
     .eq('restaurant_id', client.restaurant_id)
     .maybeSingle()
   if (!reward) return NextResponse.json({ error: 'Récompense invalide' }, { status: 404 })
-  if (!reward.is_active) return NextResponse.json({ error: 'Récompense inactive' }, { status: 400 })
+  if (!reward.active) return NextResponse.json({ error: 'Récompense inactive' }, { status: 400 })
 
-  const pointsNeeded = rewardPoints ?? reward.points_required
+  const pointsNeeded = rewardPoints ?? reward.points_cost
   if ((client.points_balance ?? 0) < pointsNeeded)
     return NextResponse.json({ error: 'Solde insuffisant' }, { status: 400 })
 

@@ -18,12 +18,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (!existing) return NextResponse.json({ error: 'Récompense introuvable' }, { status: 404 })
 
   const body = await req.json()
-  // Mapper les noms frontend → colonnes DB
+  // Colonnes DB réelles : active, points_cost
   const updates: Record<string, unknown> = {}
-  if (body.name        !== undefined) updates.name            = body.name
-  if (body.description !== undefined) updates.description     = body.description
-  if (body.points_cost !== undefined) updates.points_required = Number(body.points_cost)
-  if (body.active      !== undefined) updates.is_active       = body.active
+  if (body.name        !== undefined) updates.name        = body.name
+  if (body.description !== undefined) updates.description = body.description
+  if (body.points_cost !== undefined) updates.points_cost = Number(body.points_cost)
+  if (body.active      !== undefined) updates.active      = body.active
 
   const { data, error } = await (admin.from('rewards') as any)
     .update(updates)
@@ -32,7 +32,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ ...data, points_cost: data.points_required, active: data.is_active })
+  return NextResponse.json(data)
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
