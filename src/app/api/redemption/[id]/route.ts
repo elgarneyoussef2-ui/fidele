@@ -3,14 +3,26 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { getRestaurantId } from '@/lib/session'
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const restaurantId = await getRestaurantId(req)
-  if (!restaurantId) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-
-  const { action } = await req.json()
-  if (action !== 'accept' && action !== 'reject')
-    return NextResponse.json({ error: 'Action invalide' }, { status: 400 })
+  const { action, staffId } = await req.json()
 
   const admin = await createAdminClient()
+
+  // Auth 1 : cookie JWT restaurateur (dashboard)
+  let restaurantId = await getRestaurantId(req)
+
+  // Auth 2 : staffId fourni par la page /staff (le serveur)
+  if (!restaurantId && staffId) {
+    const { data: member } = await (admin.from('staff') as any)
+      .select('restaurant_id')
+      .eq('id', staffId)
+      .maybeSingle()
+    if (member) restaurantId = member.restaurant_id as string
+  }
+
+  if (!restaurantId) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+
+  if (action !== 'accept' && action !== 'reject')
+    return NextResponse.json({ error: 'Action invalide' }, { status: 400 })
 
   // Vérifier que la demande appartient à ce restaurant
   const { data: redemption } = await (admin.from('redemption_requests') as any)

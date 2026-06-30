@@ -5,10 +5,25 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { getRestaurantId } from '@/lib/session'
 
 export async function GET(req: NextRequest) {
-  const restaurantId = await getRestaurantId(req)
+  const admin = await createAdminClient()
+
+  // Auth 1 : cookie JWT restaurateur (dashboard)
+  let restaurantId = await getRestaurantId(req)
+
+  // Auth 2 : staffId fourni par la page /staff (le serveur)
+  if (!restaurantId) {
+    const staffId = req.nextUrl.searchParams.get('staffId')
+    if (staffId) {
+      const { data: member } = await (admin.from('staff') as any)
+        .select('restaurant_id')
+        .eq('id', staffId)
+        .maybeSingle()
+      if (member) restaurantId = member.restaurant_id as string
+    }
+  }
+
   if (!restaurantId) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
 
-  const admin = await createAdminClient()
   const { data, error } = await (admin.from('redemption_requests') as any)
     .select('*')
     .eq('restaurant_id', restaurantId)
